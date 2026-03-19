@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.1] - 2026-03-19
+
+### Fixed
+- 修正 HUD 中 `i<=hp` 的 `<` 符號導致 HTML parse error，改用 `hp>=i`
+
 ## [0.1.0] - 2026-03-19
 
 ### Added

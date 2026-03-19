@@ -119,7 +119,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     </div>
     <canvas id="monster-canvas"></canvas>
     <div id="hud">
-      <div class="hp"><span v-for="i in 3" :key="i">{{i<=hp?'❤️':'🖤'}}</span></div>
+      <div class="hp"><span v-for="i in 3" :key="i">{{hp>=i?'❤️':'🖤'}}</span></div>
       <div class="score">⭐ {{score}}</div>
       <div class="level">Lv.{{level}}</div>
     </div>
