@@ -92,7 +92,8 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 .kkey:active .zh,.kkey.active .zh{color:#fff}
 .kkey.tone{background:#1a1a3a;border-color:#3d2d6a}
 .kkey.tone .zh{color:#fbbf24;font-size:var(--zh-size)}
-.kkey.spc{width:clamp(70px,18vw,100px)}
+.kkey.spc{width:auto;padding:0 16px;white-space:nowrap}
+.kkey.spc .zh{font-size:clamp(10px,2.5vw,14px)}
 
 /* ── Overlays ── */
 #overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px;text-align:center}
