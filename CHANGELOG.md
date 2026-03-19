@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] - 2026-03-19
+
+### Added
+- 怪物 sprite 系統：使用 Kenney Monster Builder Pack spritesheet 組合隨機怪物，取代手繪圓形
+- 多層背景場景：使用 Kenney Background Elements 素材包，在 PixiJS canvas 中組裝日景背景（天空、雲、遠山、綠色山丘、地面、松樹、城堡）
+
 ## [0.1.1] - 2026-03-19
 
 ### Fixed

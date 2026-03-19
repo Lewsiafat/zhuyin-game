@@ -22,7 +22,7 @@ Single-page app with all game logic in one file:
 ### Frontend Stack (all via CDN, no bundler)
 
 - **Vue 3** (global build) — reactive UI: keyboard rendering, sentence display, overlays, game state
-- **PixiJS 7** — monster area canvas: sprite rendering, HP bar, bounce animation, death animation
+- **PixiJS 7** — monster area canvas: layered background scene, sprite-composite monsters, HP bar, bounce/death animations
 
 ### Game Flow
 

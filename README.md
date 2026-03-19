@@ -26,7 +26,9 @@ npm start
 Single-page app, all code in `src/index.html` (HTML + CSS + JS in one file).
 
 - `src/index.js` — Express static server for production deployment
-- `src/index.html` — game UI, logic, keyboard, and PixiJS monster rendering
+- `src/index.html` — game UI, logic, keyboard, and PixiJS monster/background rendering
+- `assets/kenney_background-elements/` — Kenney background element sprites (Public Domain)
+- `assets/kenney_monster-builder-pack/` — Kenney monster builder sprites (Public Domain)
 - `specs/` — development task walkthroughs
 - `.github/workflows/deploy.yml` — auto-deploy to VPS on push to main
 

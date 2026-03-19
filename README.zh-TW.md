@@ -26,7 +26,9 @@ npm start
 單頁應用，所有程式碼在 `src/index.html`（HTML + CSS + JS 合一）。
 
 - `src/index.js` — Express 靜態伺服器，用於生產部署
-- `src/index.html` — 遊戲 UI、邏輯、鍵盤、PixiJS 怪物渲染
+- `src/index.html` — 遊戲 UI、邏輯、鍵盤、PixiJS 怪物與背景渲染
+- `assets/kenney_background-elements/` — Kenney 背景元素素材（Public Domain）
+- `assets/kenney_monster-builder-pack/` — Kenney 怪物組裝素材（Public Domain）
 - `specs/` — 開發任務紀錄
 - `.github/workflows/deploy.yml` — push 到 main 時自動部署至 VPS
 
