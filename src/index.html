@@ -10,69 +10,76 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column;user-select:none}
 
+/* hidden mobile input */
+#mobile-input{position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0}
+
 /* ── Top: monster canvas ── */
-#monster-area{position:relative;flex:0 0 260px;background:linear-gradient(180deg,#16213e 0%,#0f3460 100%);border-bottom:2px solid #533483}
+#monster-area{position:relative;flex:0 0 240px;background:linear-gradient(180deg,#16213e 0%,#0f3460 100%);border-bottom:2px solid #533483}
 #monster-canvas{display:block}
 #timer-bar-wrap{position:absolute;top:0;left:0;right:0;height:6px;background:#333}
-#timer-bar{height:100%;background:#00d4ff;transition:width 0.1s linear;border-radius:0 3px 3px 0}
-#hud{position:absolute;top:10px;left:12px;display:flex;gap:16px;align-items:center;font-size:13px}
+#timer-bar{height:100%;transition:width 0.1s linear;border-radius:0 3px 3px 0}
+#hud{position:absolute;top:10px;left:12px;display:flex;gap:16px;align-items:center}
 #hud .hp span{font-size:18px}
 #hud .score{color:#ffd700;font-weight:700;font-size:16px}
 #hud .level{color:#a78bfa;font-size:13px}
-#combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:900;color:#ffd700;text-shadow:0 0 20px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s}
+#combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:900;color:#ffd700;text-shadow:0 0 20px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s}
 #combo-msg.show{opacity:1}
 #dmg-flash{position:absolute;inset:0;background:rgba(255,0,0,0);pointer-events:none;transition:background 0.15s}
 #dmg-flash.flash{background:rgba(255,0,0,0.35)}
 
 /* ── Middle: typing area ── */
-#typing-area{flex:0 0 auto;padding:10px 16px 6px;background:#0d0d1a;border-bottom:1px solid #2d2d4e}
-#sentence-display{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;min-height:52px;align-items:center}
-.zchar{
-  font-size:26px;font-weight:700;padding:4px 6px;border-radius:6px;
-  color:#555;background:#1e1e3a;border:2px solid transparent;
-  transition:all 0.15s;line-height:1;
-}
+#typing-area{flex:0 0 auto;padding:8px 12px 5px;background:#0d0d1a;border-bottom:1px solid #2d2d4e}
+#sentence-display{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;min-height:46px;align-items:center}
+.zchar{font-size:24px;font-weight:700;padding:3px 5px;border-radius:6px;color:#555;background:#1e1e3a;border:2px solid transparent;transition:all 0.15s;line-height:1}
 .zchar.current{color:#fff;background:#2d2d5a;border-color:#818cf8;animation:blink 0.8s infinite}
 .zchar.correct{color:#4ade80;background:#052e16;border-color:#16a34a}
 .zchar.wrong{color:#f87171;background:#450a0a;border-color:#dc2626;animation:shake 0.3s}
 @keyframes blink{0%,100%{border-color:#818cf8}50%{border-color:#4f46e5}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-#progress-bar-wrap{height:4px;background:#1e1e3a;border-radius:2px;margin-top:6px}
+#progress-bar-wrap{height:4px;background:#1e1e3a;border-radius:2px;margin-top:5px}
 #progress-bar{height:100%;background:linear-gradient(90deg,#818cf8,#4ade80);border-radius:2px;transition:width 0.2s}
 
 /* ── Keyboard ── */
-#keyboard-area{flex:1;background:#111125;padding:6px 8px;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
-.kb-row{display:flex;justify-content:center;gap:4px;margin-bottom:4px}
+#keyboard-area{flex:1;background:#111125;padding:5px 4px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.kb-row{display:flex;justify-content:center;gap:3px}
 .kkey{
-  min-width:34px;height:34px;border-radius:6px;
+  min-width:30px;height:40px;border-radius:6px;
   background:#1e1e3a;border:1px solid #2d2d5a;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-size:14px;font-weight:700;color:#a5b4fc;cursor:default;
-  transition:all 0.1s;position:relative;line-height:1;padding:2px;
+  cursor:pointer;transition:all 0.1s;line-height:1;padding:2px;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
 }
-.kkey .zh{font-size:15px;color:#e0e7ff}
+.kkey .zh{font-size:16px;color:#e0e7ff;font-weight:700}
 .kkey .en{font-size:9px;color:#6366f1;margin-top:1px}
-.kkey.active{background:#4f46e5;border-color:#818cf8;color:#fff;transform:scale(0.93)}
-.kkey.active .zh{color:#fff}
-.kkey.tone{min-width:30px;background:#1a1a3a;border-color:#3d2d6a}
+.kkey:active,.kkey.active{background:#4f46e5;border-color:#818cf8;transform:scale(0.91)}
+.kkey:active .zh,.kkey.active .zh{color:#fff}
+.kkey.tone{background:#1a1a3a;border-color:#3d2d6a}
 .kkey.tone .zh{color:#fbbf24}
+.kkey.space-key{min-width:80px}
 
 /* ── Overlays ── */
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-#overlay h1{font-size:36px;color:#a78bfa;margin-bottom:8px;text-shadow:0 0 20px #7c3aed}
-#overlay p{color:#94a3b8;margin-bottom:24px;font-size:16px;text-align:center;max-width:320px;line-height:1.6}
-.btn{padding:12px 32px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:18px;cursor:pointer;font-weight:700;transition:all 0.2s}
-.btn:hover{background:#6366f1;transform:scale(1.05)}
-#gameover-title{color:#f87171;font-size:40px}
-#final-score{color:#ffd700;font-size:28px;margin:8px 0}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px}
+#overlay h1{font-size:32px;color:#a78bfa;margin-bottom:8px;text-shadow:0 0 20px #7c3aed}
+#overlay p{color:#94a3b8;margin-bottom:20px;font-size:15px;text-align:center;max-width:300px;line-height:1.7}
+.btn{padding:12px 32px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:18px;cursor:pointer;font-weight:700;transition:all 0.2s;touch-action:manipulation}
+.btn:active{background:#6366f1;transform:scale(0.97)}
+#gameover-title{color:#f87171;font-size:36px}
+#final-score{color:#ffd700;font-size:26px;margin:8px 0}
 </style>
 </head>
 <body>
 <div id="app">
 
+  <!-- hidden input for mobile keyboard -->
+  <input id="mobile-input" ref="mobileInput" type="text"
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+         @keydown.prevent="onKeyDown" @input="onMobileInput" @blur="refocusMobile"/>
+
   <!-- ── Monster Pixi canvas ── -->
-  <div id="monster-area">
-    <div id="timer-bar-wrap"><div id="timer-bar" :style="{width: timerPct+'%', background: timerPct<30?'#f87171':'#00d4ff'}"></div></div>
+  <div id="monster-area" @click="focusMobile">
+    <div id="timer-bar-wrap">
+      <div id="timer-bar" :style="{width: timerPct+'%', background: timerPct<30?'#f87171':'#00d4ff'}"></div>
+    </div>
     <canvas id="monster-canvas"></canvas>
     <div id="hud">
       <div class="hp"><span v-for="i in 3" :key="i">{{ i<=hp ? '❤️' : '🖤' }}</span></div>
@@ -84,7 +91,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   </div>
 
   <!-- ── Typing area ── -->
-  <div id="typing-area">
+  <div id="typing-area" @click="focusMobile">
     <div id="sentence-display">
       <div v-for="(ch, i) in currentSentence" :key="i"
            :class="['zchar', {correct: i<cursor, current: i===cursor, wrong: wrongIdx===i}]">
@@ -100,7 +107,9 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   <div id="keyboard-area">
     <div v-for="(row, ri) in kbRows" :key="ri" class="kb-row">
       <div v-for="k in row" :key="k.zh"
-           :class="['kkey', {active: activeKeys.has(k.en), tone: k.tone}]">
+           :class="['kkey', {active: activeKeys.has(k.en), tone: k.tone, 'space-key': k.en==='SPC'}]"
+           @mousedown.prevent="pressKey(k.en)"
+           @touchstart.prevent="pressKey(k.en)">
         <span class="zh">{{ k.zh }}</span>
         <span class="en">{{ k.en }}</span>
       </div>
@@ -109,8 +118,10 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
   <!-- ── Overlays ── -->
   <div id="overlay" v-if="phase==='start'">
-    <h1>注音打字大冒險</h1>
-    <p>用鍵盤輸入注音符號，打敗怪物吧！<br>每打對一個字就造成傷害 ⚔️<br>時間到怪物會反擊，小心 HP！</p>
+    <h1>⚔️ 注音打字大冒險</h1>
+    <p>輸入注音符號打敗怪物！<br>每打對一個字造成傷害<br>時間到怪物會反擊扣 HP ❤️<br><br>
+    💡 <b>手機</b>：點擊下方虛擬鍵盤<br>
+    💻 <b>電腦</b>：用注音鍵盤直接打字</p>
     <button class="btn" @click="startGame">開始遊戲 ▶</button>
   </div>
   <div id="overlay" v-if="phase==='gameover'">
@@ -123,53 +134,63 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, onUnmounted, watch } = Vue;
+const { createApp, ref, onMounted, onUnmounted } = Vue;
 
-// ── Zhuyin keyboard layout (standard TW bopomofo) ──
+// ── Standard TW Zhuyin keyboard layout (by physical keyboard rows) ──
+// Row 1: number row
+// Row 2: QWERTY row
+// Row 3: ASDF row
+// Row 4: ZXCV row + space
 const KB_ROWS = [
+  // Number row: 1 2 3 4 5 6 7 8 9 0 -
   [
-    {zh:'ㄅ',en:'1'},{zh:'ㄆ',en:'q'},{zh:'ㄇ',en:'a'},{zh:'ㄈ',en:'z'},
-    {zh:'ㄉ',en:'2'},{zh:'ㄊ',en:'w'},{zh:'ㄋ',en:'s'},{zh:'ㄌ',en:'x'},
-    {zh:'ㄍ',en:'e'},{zh:'ㄎ',en:'d'},{zh:'ㄏ',en:'c'},
+    {zh:'ㄅ',en:'1'}, {zh:'ㄉ',en:'2'}, {zh:'ˇ',en:'3',tone:true}, {zh:'ˋ',en:'4',tone:true},
+    {zh:'ㄓ',en:'5'}, {zh:'ˊ',en:'6',tone:true}, {zh:'˙',en:'7',tone:true},
+    {zh:'ㄚ',en:'8'}, {zh:'ㄞ',en:'9'}, {zh:'ㄢ',en:'0'}, {zh:'ㄦ',en:'-'},
   ],
+  // QWERTY row: q w e r t y u i o p
   [
-    {zh:'ㄐ',en:'r'},{zh:'ㄑ',en:'f'},{zh:'ㄒ',en:'v'},
-    {zh:'ㄓ',en:'5'},{zh:'ㄔ',en:'t'},{zh:'ㄕ',en:'g'},{zh:'ㄖ',en:'b'},
-    {zh:'ㄗ',en:'y'},{zh:'ㄘ',en:'h'},{zh:'ㄙ',en:'n'},
+    {zh:'ㄆ',en:'q'}, {zh:'ㄊ',en:'w'}, {zh:'ㄍ',en:'e'}, {zh:'ㄐ',en:'r'},
+    {zh:'ㄔ',en:'t'}, {zh:'ㄗ',en:'y'}, {zh:'ㄧ',en:'u'}, {zh:'ㄛ',en:'i'},
+    {zh:'ㄟ',en:'o'}, {zh:'ㄣ',en:'p'},
   ],
+  // ASDF row: a s d f g h j k l ;
   [
-    {zh:'ㄧ',en:'u'},{zh:'ㄨ',en:'j'},{zh:'ㄩ',en:'m'},
-    {zh:'ㄚ',en:'8'},{zh:'ㄛ',en:'i'},{zh:'ㄜ',en:'k'},{zh:'ㄝ',en:','},
-    {zh:'ㄞ',en:'9'},{zh:'ㄟ',en:'o'},{zh:'ㄠ',en:'l'},{zh:'ㄡ',en:'.'},
+    {zh:'ㄇ',en:'a'}, {zh:'ㄋ',en:'s'}, {zh:'ㄎ',en:'d'}, {zh:'ㄑ',en:'f'},
+    {zh:'ㄕ',en:'g'}, {zh:'ㄘ',en:'h'}, {zh:'ㄨ',en:'j'}, {zh:'ㄜ',en:'k'},
+    {zh:'ㄠ',en:'l'}, {zh:'ㄤ',en:';'},
   ],
+  // ZXCV row: z x c v b n m , . /
   [
-    {zh:'ㄢ',en:'0'},{zh:'ㄣ',en:'p'},{zh:'ㄤ',en:';'},{zh:'ㄥ',en:'/'},{zh:'ㄦ',en:'-'},
-    {zh:'ˊ',en:'6',tone:true},{zh:'ˇ',en:'3',tone:true},{zh:'ˋ',en:'4',tone:true},{zh:'˙',en:'7',tone:true},{zh:'　',en:'SPC',tone:true},
+    {zh:'ㄈ',en:'z'}, {zh:'ㄌ',en:'x'}, {zh:'ㄏ',en:'c'}, {zh:'ㄒ',en:'v'},
+    {zh:'ㄖ',en:'b'}, {zh:'ㄙ',en:'n'}, {zh:'ㄩ',en:'m'}, {zh:'ㄝ',en:','},
+    {zh:'ㄡ',en:'.'}, {zh:'ㄥ',en:'/'},
+  ],
+  // Space (first/neutral tone)
+  [
+    {zh:'（空白＝一聲）',en:'SPC',tone:true},
   ],
 ];
 
-// key → zhuyin map
+// Build key→zhuyin and zhuyin→key maps
 const KEY_TO_ZH = {};
-KB_ROWS.flat().forEach(k => { KEY_TO_ZH[k.en] = k.zh; });
-// also map space
-KEY_TO_ZH[' '] = '　';
+KB_ROWS.flat().forEach(k => {
+  KEY_TO_ZH[k.en] = k.zh;
+});
+KEY_TO_ZH[' '] = '（空白＝一聲）'; // space maps to first-tone key
 
-// ── Sentences pool ──
+// ── Sentences ──
 const SENTENCES = [
-  // short
   ['ㄋ','ㄧ','ˇ','ㄏ','ㄠ','ˇ'],
   ['ㄒ','ㄧ','ㄝ','ˋ','ㄒ','ㄧ','ㄝ'],
   ['ㄇ','ㄟ','ˇ','ㄊ','ㄧ','ㄢ'],
   ['ㄏ','ㄠ','ˇ','ㄔ','ˋ'],
-  // medium
   ['ㄨ','ㄛ','ˇ','ㄞ','ˋ','ㄒ','ㄩ','ㄝ','ˊ','ㄒ','ㄧ','ˊ'],
   ['ㄊ','ㄧ','ㄢ','ㄑ','ㄧ','ˋ','ㄏ','ㄣ','ˇ','ㄏ','ㄠ','ˇ'],
   ['ㄒ','ㄧ','ㄠ','ˇ','ㄆ','ㄥ','ˊ','ㄧ','ㄡ','ˇ'],
   ['ㄗ','ㄠ','ˇ','ㄕ','ㄤ','ˋ','ㄏ','ㄠ','ˇ'],
-  // longer
   ['ㄨ','ㄛ','ˇ','ㄒ','ㄧ','ˇ','ㄏ','ㄨ','ㄢ','ㄔ','ㄧ','ㄠ','ˊ','ㄎ','ㄜ','ˋ'],
-  ['ㄉ','ㄚ','ˋ','ㄐ','ㄧ','ㄚ','ˋ','ㄉ','ㄡ','ˉ','ㄏ','ㄣ','ˇ','ㄅ','ㄤ','ˋ'],
-  ['ㄓ','ㄨ','ˋ','ㄧ','ㄣ','ˉ','ㄉ','ㄚ','ˋ','ㄗ','ˋ','ㄏ','ㄣ','ˇ','ㄎ','ㄨ','ˋ'],
+  ['ㄓ','ㄨ','ˋ','ㄧ','ㄣ','ˇ','ㄉ','ㄚ','ˋ','ㄗ','ˋ','ㄏ','ㄣ','ˇ','ㄎ','ㄨ','ˋ'],
 ];
 
 const PRAISES = ['太棒了！','厲害！','完美！','超強的！','好厲害！','無敵了！'];
@@ -177,32 +198,98 @@ const MONSTER_COLORS = [0xe74c3c,0x9b59b6,0x27ae60,0xf39c12,0x2980b9,0x16a085,0x
 
 createApp({
   setup() {
-    const phase = ref('start');   // start | playing | gameover
-    const score = ref(0);
-    const hp = ref(3);
-    const level = ref(1);
-    const cursor = ref(0);
-    const wrongIdx = ref(-1);
+    const phase      = ref('start');
+    const score      = ref(0);
+    const hp         = ref(3);
+    const level      = ref(1);
+    const cursor     = ref(0);
+    const wrongIdx   = ref(-1);
     const activeKeys = ref(new Set());
     const currentSentence = ref([]);
-    const timerPct = ref(100);
-    const kbRows = ref(KB_ROWS);
-    const comboMsg = ref(null);
-    const dmgFlash = ref(null);
+    const timerPct   = ref(100);
+    const kbRows     = ref(KB_ROWS);
+    const comboMsg   = ref(null);
+    const dmgFlash   = ref(null);
+    const mobileInput = ref(null);
 
-    let pixiApp = null;
-    let monster = null;
+    let pixiApp = null, monster = null;
     let monsterHP = 0, monsterMaxHP = 0;
-    let hpBarBg = null, hpBarFill = null, hpText = null;
+    let hpBarFill = null, hpText = null;
     let timerInterval = null;
     let timeLeft = 0, timeTotal = 0;
-    let sentencePool = [];
     let usedIdx = new Set();
 
-    // ── Pixi init ──
+    // ── Mobile input focus ──
+    function focusMobile() {
+      if (mobileInput.value) mobileInput.value.focus();
+    }
+    function refocusMobile() {
+      // re-focus after short delay if still playing (prevents blur-loop on desktop)
+      if (phase.value === 'playing') {
+        setTimeout(() => { if (mobileInput.value) mobileInput.value.focus(); }, 100);
+      }
+    }
+    // Handle mobile IME input (for reference only — main handling via keydown)
+    function onMobileInput(e) {
+      // Clear the input value so it doesn't accumulate
+      if (mobileInput.value) mobileInput.value.value = '';
+    }
+
+    // ── Core input handler (shared by keyboard & virtual keys) ──
+    function handleInput(key) {
+      if (phase.value !== 'playing') return;
+
+      const zh = KEY_TO_ZH[key];
+      if (!zh) return;
+
+      // flash key highlight
+      const dispKey = key === ' ' ? 'SPC' : key;
+      activeKeys.value = new Set([...activeKeys.value, dispKey]);
+      setTimeout(() => {
+        activeKeys.value = new Set([...activeKeys.value].filter(k => k !== dispKey));
+      }, 150);
+
+      const expected = currentSentence.value[cursor.value];
+      // space key = first tone (no tone mark needed) — accept space when expected char matches
+      const isCorrect = zh === expected || (key === ' ' && !['ˊ','ˇ','ˋ','˙'].includes(expected) && cursor.value < currentSentence.value.length);
+
+      if (zh === expected) {
+        cursor.value++;
+        damageMonster();
+        if (cursor.value >= currentSentence.value.length) {
+          clearInterval(timerInterval);
+          score.value++;
+          if (score.value % 3 === 0) level.value++;
+          showPraise();
+          if (monsterHP <= 0) killMonster();
+          setTimeout(() => loadSentence(), 500);
+        }
+      } else {
+        wrongIdx.value = cursor.value;
+        setTimeout(() => { wrongIdx.value = -1; }, 300);
+      }
+    }
+
+    // ── Physical keyboard ──
+    function onKeyDown(e) {
+      if (phase.value !== 'playing') return;
+      if (['Tab','Enter'].includes(e.key)) return;
+      e.preventDefault();
+      const key = e.key === ' ' ? ' ' : e.key.toLowerCase();
+      handleInput(key);
+    }
+
+    // ── Virtual keyboard click/tap ──
+    function pressKey(en) {
+      if (phase.value !== 'playing') return;
+      const key = en === 'SPC' ? ' ' : en;
+      handleInput(key);
+    }
+
+    // ── Pixi ──
     function initPixi() {
       const area = document.getElementById('monster-area');
-      const W = area.clientWidth, H = 260;
+      const W = area.clientWidth, H = 240;
       pixiApp = new PIXI.Application({
         view: document.getElementById('monster-canvas'),
         width: W, height: H,
@@ -213,258 +300,168 @@ createApp({
     }
 
     function spawnMonster() {
-      if (pixiApp.stage.children.length > 0) pixiApp.stage.removeChildren();
-
+      if (!pixiApp) return;
+      pixiApp.stage.removeChildren();
       const W = pixiApp.renderer.width, H = pixiApp.renderer.height;
       const col = MONSTER_COLORS[Math.floor(Math.random() * MONSTER_COLORS.length)];
 
-      // stars background
+      // stars
       const stars = new PIXI.Graphics();
-      for (let i = 0; i < 40; i++) {
-        stars.beginFill(0xffffff, Math.random() * 0.6 + 0.1);
+      for (let i=0;i<35;i++){
+        stars.beginFill(0xffffff, Math.random()*0.5+0.1);
         stars.drawCircle(Math.random()*W, Math.random()*H, Math.random()*1.5+0.5);
         stars.endFill();
       }
       pixiApp.stage.addChild(stars);
 
-      // monster container
       const mc = new PIXI.Container();
-      mc.x = W/2; mc.y = H/2 + 10;
+      mc.x = W/2; mc.y = H/2+10;
       pixiApp.stage.addChild(mc);
       monster = mc;
 
       const g = new PIXI.Graphics();
-      // body
       g.beginFill(col);
-      g.drawRoundedRect(-30, -30, 60, 55, 8);
+      g.drawRoundedRect(-28,-28,56,52,8);
       g.endFill();
-      // eyes
       g.beginFill(0xffffff);
-      g.drawCircle(-12, -12, 9);
-      g.drawCircle(12, -12, 9);
+      g.drawCircle(-11,-12,8); g.drawCircle(11,-12,8);
       g.endFill();
       g.beginFill(0x000000);
-      g.drawCircle(-11, -11, 5);
-      g.drawCircle(13, -11, 5);
+      g.drawCircle(-10,-11,4); g.drawCircle(12,-11,4);
       g.endFill();
-      // pupils
       g.beginFill(0xffffff);
-      g.drawCircle(-9, -9, 2);
-      g.drawCircle(15, -9, 2);
+      g.drawCircle(-8,-9,1.5); g.drawCircle(14,-9,1.5);
       g.endFill();
-      // mouth
-      g.lineStyle(3, 0x000000);
-      g.moveTo(-10, 6); g.lineTo(10, 6);
+      g.lineStyle(2,0x000000);
+      g.moveTo(-9,6); g.lineTo(9,6);
       g.lineStyle(0);
-      // arms
       g.beginFill(col);
-      g.drawRoundedRect(-48, -10, 18, 10, 5);
-      g.drawRoundedRect(30, -10, 18, 10, 5);
+      g.drawRoundedRect(-46,-10,16,9,4);
+      g.drawRoundedRect(30,-10,16,9,4);
       g.endFill();
-      // feet
-      g.beginFill(darken(col, 0.7));
-      g.drawEllipse(-14, 25, 12, 7);
-      g.drawEllipse(14, 25, 12, 7);
+      g.beginFill(darken(col,0.7));
+      g.drawEllipse(-13,24,11,6); g.drawEllipse(13,24,11,6);
       g.endFill();
       mc.addChild(g);
 
-      // HP bar
       monsterMaxHP = 5 + level.value * 2;
       monsterHP = monsterMaxHP;
-      const bw = 100;
-      hpBarBg = new PIXI.Graphics();
-      hpBarBg.beginFill(0x333333); hpBarBg.drawRoundedRect(-bw/2, -55, bw, 12, 4); hpBarBg.endFill();
-      mc.addChild(hpBarBg);
+      const bw = 90;
+      const hpBg = new PIXI.Graphics();
+      hpBg.beginFill(0x333333); hpBg.drawRoundedRect(-bw/2,-52,bw,11,3); hpBg.endFill();
+      mc.addChild(hpBg);
       hpBarFill = new PIXI.Graphics();
       drawHPBar();
       mc.addChild(hpBarFill);
-      hpText = new PIXI.Text(`${monsterHP}/${monsterMaxHP}`, {fontSize:9, fill:0xffffff, fontWeight:'bold'});
-      hpText.anchor.set(0.5, 0); hpText.x = 0; hpText.y = -55;
+      hpText = new PIXI.Text(`${monsterHP}/${monsterMaxHP}`,{fontSize:8,fill:0xffffff,fontWeight:'bold'});
+      hpText.anchor.set(0.5,0); hpText.x=0; hpText.y=-52;
       mc.addChild(hpText);
 
-      // Idle bounce animation
-      let t = Math.random() * Math.PI * 2;
-      pixiApp.ticker.add(() => {
-        t += 0.04;
-        mc.y = H/2 + 10 + Math.sin(t) * 5;
+      let t = Math.random()*Math.PI*2;
+      pixiApp.ticker.add(()=>{
+        t+=0.04; mc.y = H/2+10+Math.sin(t)*5;
       });
     }
 
     function drawHPBar() {
-      const bw = 100;
-      const pct = Math.max(0, monsterHP / monsterMaxHP);
-      const fillColor = pct > 0.5 ? 0x2ecc71 : pct > 0.25 ? 0xf39c12 : 0xe74c3c;
+      if(!hpBarFill) return;
+      const bw=90, pct=Math.max(0,monsterHP/monsterMaxHP);
+      const c = pct>0.5?0x2ecc71:pct>0.25?0xf39c12:0xe74c3c;
       hpBarFill.clear();
-      hpBarFill.beginFill(fillColor);
-      hpBarFill.drawRoundedRect(-bw/2, -55, bw*pct, 12, 4);
+      hpBarFill.beginFill(c);
+      hpBarFill.drawRoundedRect(-bw/2,-52,bw*pct,11,3);
       hpBarFill.endFill();
-      if (hpText) hpText.text = `${Math.max(0,monsterHP)}/${monsterMaxHP}`;
+      if(hpText) hpText.text=`${Math.max(0,monsterHP)}/${monsterMaxHP}`;
     }
 
     function damageMonster() {
-      const dmg = 1;
-      monsterHP -= dmg;
+      monsterHP--;
       drawHPBar();
-      // flash monster red
-      if (monster) {
-        monster.alpha = 0.5;
-        setTimeout(() => { if(monster) monster.alpha = 1; }, 120);
-      }
+      if(monster){ monster.alpha=0.45; setTimeout(()=>{if(monster)monster.alpha=1;},110); }
     }
 
     function killMonster() {
-      // death: scale out
-      if (!monster) return;
-      let sc = 1;
-      const ticker = pixiApp.ticker.add(() => {
-        sc -= 0.08;
-        if (monster) { monster.scale.set(Math.max(0,sc)); monster.alpha = sc; }
-        if (sc <= 0) { pixiApp.ticker.remove(ticker); }
+      if(!monster) return;
+      let sc=1;
+      const tk = pixiApp.ticker.add(()=>{
+        sc-=0.08;
+        if(monster){monster.scale.set(Math.max(0,sc));monster.alpha=sc;}
+        if(sc<=0) pixiApp.ticker.remove(tk);
       });
-      setTimeout(() => spawnMonster(), 600);
+      setTimeout(()=>spawnMonster(),600);
     }
 
-    function darken(color, factor) {
-      const r = Math.floor(((color >> 16) & 0xff) * factor);
-      const g = Math.floor(((color >> 8) & 0xff) * factor);
-      const b = Math.floor((color & 0xff) * factor);
-      return (r << 16) | (g << 8) | b;
+    function darken(color,f){
+      return (Math.floor(((color>>16)&0xff)*f)<<16)|(Math.floor(((color>>8)&0xff)*f)<<8)|Math.floor((color&0xff)*f);
     }
 
-    // ── Sentence logic ──
+    // ── Sentence ──
     function pickSentence() {
-      // pick based on level
-      let pool;
-      if (level.value <= 2) pool = SENTENCES.slice(0, 4);
-      else if (level.value <= 4) pool = SENTENCES.slice(2, 8);
-      else pool = SENTENCES.slice(5);
-
-      if (usedIdx.size >= pool.length) usedIdx.clear();
-      let idx;
-      do { idx = Math.floor(Math.random() * pool.length); } while (usedIdx.has(idx));
+      let pool = level.value<=2?SENTENCES.slice(0,4):level.value<=4?SENTENCES.slice(2,8):SENTENCES.slice(5);
+      if(usedIdx.size>=pool.length) usedIdx.clear();
+      let idx; do{idx=Math.floor(Math.random()*pool.length);}while(usedIdx.has(idx));
       usedIdx.add(idx);
       return pool[idx];
     }
 
     function loadSentence() {
-      cursor.value = 0;
-      wrongIdx.value = -1;
-      currentSentence.value = pickSentence();
+      cursor.value=0; wrongIdx.value=-1;
+      currentSentence.value=pickSentence();
       startTimer();
+      focusMobile();
     }
 
     // ── Timer ──
     function startTimer() {
       clearInterval(timerInterval);
-      timeTotal = currentSentence.value.length * 3000;
-      timeLeft = timeTotal;
-      timerPct.value = 100;
-      timerInterval = setInterval(() => {
-        timeLeft -= 100;
-        timerPct.value = Math.max(0, timeLeft / timeTotal * 100);
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          onTimerExpire();
-        }
-      }, 100);
+      timeTotal=currentSentence.value.length*3000;
+      timeLeft=timeTotal; timerPct.value=100;
+      timerInterval=setInterval(()=>{
+        timeLeft-=100;
+        timerPct.value=Math.max(0,timeLeft/timeTotal*100);
+        if(timeLeft<=0){ clearInterval(timerInterval); onTimerExpire(); }
+      },100);
     }
 
     function onTimerExpire() {
-      // monster attacks
-      const flash = dmgFlash.value;
-      if (flash) { flash.classList.add('flash'); setTimeout(() => flash.classList.remove('flash'), 300); }
+      const f=dmgFlash.value;
+      if(f){f.classList.add('flash');setTimeout(()=>f.classList.remove('flash'),300);}
       hp.value--;
-      if (hp.value <= 0) {
-        phase.value = 'gameover';
-        clearInterval(timerInterval);
-        return;
-      }
+      if(hp.value<=0){ phase.value='gameover'; clearInterval(timerInterval); return; }
       loadSentence();
     }
 
-    // ── Key input ──
-    function onKeyDown(e) {
-      if (phase.value !== 'playing') return;
-      e.preventDefault();
-
-      const key = e.key === ' ' ? ' ' : e.key.toLowerCase();
-      const zh = KEY_TO_ZH[key];
-      if (!zh) return;
-
-      // highlight keyboard
-      activeKeys.value = new Set([...activeKeys.value, key === ' ' ? 'SPC' : key]);
-
-      const expected = currentSentence.value[cursor.value];
-      if (zh === expected || (key === ' ' && expected === '　')) {
-        // correct
-        cursor.value++;
-        damageMonster();
-
-        if (cursor.value >= currentSentence.value.length) {
-          // sentence done!
-          clearInterval(timerInterval);
-          score.value++;
-          if (score.value % 3 === 0) level.value++;
-          showPraise();
-          if (monsterHP <= 0) killMonster();
-          setTimeout(() => loadSentence(), 500);
-        }
-      } else {
-        // wrong
-        wrongIdx.value = cursor.value;
-        setTimeout(() => { wrongIdx.value = -1; }, 300);
-      }
-    }
-
-    function onKeyUp(e) {
-      const key = e.key === ' ' ? 'SPC' : e.key.toLowerCase();
-      activeKeys.value = new Set([...activeKeys.value].filter(k => k !== key));
-    }
-
     function showPraise() {
-      const el = comboMsg.value;
-      if (!el) return;
-      el.textContent = PRAISES[Math.floor(Math.random() * PRAISES.length)];
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 700);
+      const el=comboMsg.value; if(!el) return;
+      el.textContent=PRAISES[Math.floor(Math.random()*PRAISES.length)];
+      el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),700);
     }
 
-    // ── Game control ──
+    // ── Game ──
     function startGame() {
-      score.value = 0;
-      hp.value = 3;
-      level.value = 1;
-      usedIdx.clear();
-      phase.value = 'playing';
-      if (!pixiApp) {
-        setTimeout(() => { initPixi(); loadSentence(); }, 50);
-      } else {
-        spawnMonster();
-        loadSentence();
-      }
+      score.value=0; hp.value=3; level.value=1; usedIdx.clear();
+      phase.value='playing';
+      if(!pixiApp){ setTimeout(()=>{ initPixi(); loadSentence(); },50); }
+      else { spawnMonster(); loadSentence(); }
     }
 
-    function restartGame() {
-      startGame();
-    }
+    function restartGame(){ startGame(); }
 
-    onMounted(() => {
+    onMounted(()=>{
       window.addEventListener('keydown', onKeyDown);
-      window.addEventListener('keyup', onKeyUp);
     });
-
-    onUnmounted(() => {
+    onUnmounted(()=>{
       window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
       clearInterval(timerInterval);
-      if (pixiApp) pixiApp.destroy();
+      if(pixiApp) pixiApp.destroy();
     });
 
     return {
       phase, score, hp, level, cursor, wrongIdx,
       activeKeys, currentSentence, timerPct, kbRows,
-      comboMsg, dmgFlash,
-      startGame, restartGame,
+      comboMsg, dmgFlash, mobileInput,
+      startGame, restartGame, pressKey,
+      onKeyDown, onMobileInput, focusMobile, refocusMobile,
     };
   }
 }).mount('#app');
