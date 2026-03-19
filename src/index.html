@@ -35,6 +35,9 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #hud .hp span{font-size:16px}
 #hud .score{color:#ffd700;font-weight:700;font-size:15px}
 #hud .level{color:#a78bfa;font-size:12px}
+#hud .mode-badge{font-size:11px;padding:2px 7px;border-radius:8px;font-weight:700}
+#hud .mode-badge.practice{background:#065f46;color:#34d399}
+#hud .mode-badge.timeattack{background:#1e1b4b;color:#818cf8}
 #combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;color:#ffd700;text-shadow:0 0 16px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap}
 #combo-msg.show{opacity:1}
 #penalty-msg{position:absolute;top:30%;right:14px;font-size:18px;font-weight:900;color:#f87171;text-shadow:0 0 10px #dc2626;pointer-events:none;opacity:0;white-space:nowrap}
@@ -99,6 +102,23 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #overlay p{color:#94a3b8;margin-bottom:18px;font-size:clamp(13px,3.5vw,15px);max-width:300px;line-height:1.7}
 .btn{padding:11px 28px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:clamp(15px,4vw,18px);cursor:pointer;font-weight:700;touch-action:manipulation}
 .btn:active{background:#6366f1;transform:scale(0.97)}
+.btn.btn-green{background:#16a34a}
+.btn.btn-green:active{background:#15803d}
+
+/* ── Mode select ── */
+.mode-cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:320px;margin-top:8px}
+.mode-card{
+  background:#1e1e3a;border:2px solid #2d2d5a;border-radius:14px;
+  padding:16px 20px;cursor:pointer;transition:all 0.15s;text-align:left;
+}
+.mode-card:hover,.mode-card:active{border-color:#818cf8;background:#252546;transform:scale(0.98)}
+.mode-card.green{border-color:#065f46}
+.mode-card.green:hover{border-color:#34d399;background:#052e16}
+.mode-card h2{font-size:clamp(16px,4.5vw,20px);margin-bottom:4px}
+.mode-card.purple h2{color:#a78bfa}
+.mode-card.green h2{color:#34d399}
+.mode-card p{font-size:clamp(12px,3vw,14px);color:#64748b;margin:0}
+
 #gameover-title{color:#f87171;font-size:clamp(28px,7vw,38px);margin-bottom:6px}
 #final-score{color:#ffd700;font-size:clamp(20px,5vw,26px);margin-bottom:8px}
 </style>
@@ -112,7 +132,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
   <!-- Monster area -->
   <div id="monster-area" @click="focusMobile">
-    <div id="timer-bar-wrap">
+    <div id="timer-bar-wrap" v-show="mode==='timeattack'">
       <div id="timer-bar" :style="{width:timerPct+'%',background:timerPct<30?'#f87171':'#00d4ff'}"></div>
     </div>
     <canvas id="monster-canvas"></canvas>
@@ -120,9 +140,12 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div class="hp"><span v-for="i in 3" :key="i">{{hp>=i?'❤️':'🖤'}}</span></div>
       <div class="score">⭐ {{score}}</div>
       <div class="level">Lv.{{level}}</div>
+      <div v-if="phase==='playing'" :class="['mode-badge', mode]">
+        {{mode==='practice'?'練習':'限時'}}
+      </div>
     </div>
     <div id="combo-msg" ref="comboMsg"></div>
-    <div id="penalty-msg" ref="penaltyMsg">⏱ -2秒</div>
+    <div id="penalty-msg" ref="penaltyMsg" v-show="mode==='timeattack'">⏱ -2秒</div>
     <div id="dmg-flash" ref="dmgFlash"></div>
   </div>
 
@@ -164,18 +187,39 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   </div>
 
   <!-- Overlays -->
+  <!-- Start -->
   <div id="overlay" v-if="phase==='start'">
     <h1>⚔️ 注音打字大冒險</h1>
-    <p>打出注音符號擊敗怪物！<br>每打對一字造成傷害 🗡️<br>打錯會扣 2 秒⏱ 時間到扣 HP ❤️<br><br>
+    <p>打出注音符號擊敗怪物！<br>每打對一字造成傷害 🗡️<br><br>
       💡 <b>手機</b>：點擊虛擬鍵盤<br>
       💻 <b>電腦</b>：直接打注音鍵盤</p>
-    <button class="btn" @click="startGame">開始遊戲 ▶</button>
+    <button class="btn" @click="phase='select'">選擇模式 ▶</button>
   </div>
+
+  <!-- Mode select -->
+  <div id="overlay" v-if="phase==='select'">
+    <h1>選擇模式</h1>
+    <div class="mode-cards">
+      <div class="mode-card green" @click="startGame('practice')">
+        <h2>🌱 練習模式</h2>
+        <p>無時間限制，輕鬆練習注音輸入<br>打錯不扣時間，慢慢來沒關係</p>
+      </div>
+      <div class="mode-card purple" @click="startGame('timeattack')">
+        <h2>⚡ 限時模式</h2>
+        <p>依字句長度動態計時，打錯扣 2 秒<br>時間到扣 HP ❤️ — 越長的句子時間越多</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over -->
   <div id="overlay" v-if="phase==='gameover'">
     <div id="gameover-title">💀 遊戲結束</div>
     <div id="final-score">得分：{{score}} 分</div>
     <p>擊殺怪物：{{score}} 隻<br>最高關卡：Lv.{{level}}</p>
-    <button class="btn" @click="restartGame" style="margin-top:14px">再玩一次 🔄</button>
+    <div style="display:flex;gap:12px;margin-top:14px">
+      <button class="btn btn-green" @click="startGame('practice')">🌱 練習模式</button>
+      <button class="btn" @click="startGame('timeattack')">⚡ 再挑戰</button>
+    </div>
   </div>
 
 </div>
@@ -253,9 +297,15 @@ const MOUTH_TYPES = [
 const DETAIL_TYPES = ['antenna_large','antenna_small','ear','ear_round','horn_large','horn_small'];
 let monsterTextures = null; // will hold {name -> PIXI.Texture}
 
+// Dynamic time per sentence length (time attack mode)
+function calcTimeMs(flatLen) {
+  return Math.min(60000, Math.max(8000, flatLen * 3000));
+}
+
 createApp({
   setup() {
     const phase         = ref('start');
+    const mode          = ref('timeattack'); // 'practice' | 'timeattack'
     const score         = ref(0);
     const hp            = ref(3);
     const level         = ref(1);
@@ -322,7 +372,7 @@ createApp({
         if(wrongTimer) clearTimeout(wrongTimer);
         wrongIdx.value=cursor.value;
         wrongTimer=setTimeout(()=>{ wrongIdx.value=-1; wrongTimer=null; },350);
-        applyTimePenalty();
+        if(mode.value==='timeattack') applyTimePenalty();
       }
     }
 
@@ -631,13 +681,15 @@ createApp({
       const s=pickSentence();
       flatSentence.value=sentenceToFlat(s);
       currentWords.value=sentenceToWords(s);
-      startTimer(); focusMobile();
+      if(mode.value==='timeattack') startTimer();
+      else { clearInterval(timerInterval); timerPct.value=100; }
+      focusMobile();
     }
 
-    // ── Timer ──
+    // ── Timer (Time Attack only) ──
     function startTimer(){
       clearInterval(timerInterval);
-      timeTotal=flatSentence.value.length*3000;
+      timeTotal=calcTimeMs(flatSentence.value.length);
       timeLeft=timeTotal; timerPct.value=100;
       timerInterval=setInterval(()=>{
         timeLeft-=100;
@@ -669,8 +721,10 @@ createApp({
     }
 
     // ── Game control ──
-    async function startGame(){
+    async function startGame(m){
+      mode.value=m||'timeattack';
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
+      clearInterval(timerInterval);
       phase.value='playing';
       // wait for Vue to update DOM + CSS layout to settle
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
@@ -679,8 +733,6 @@ createApp({
         loadSentence();
       } else{syncCanvasSize();spawnMonster();loadSentence();}
     }
-    function restartGame(){startGame();}
-
     onMounted(()=>{
       window.addEventListener('keydown',onKeyDown);
       window.addEventListener('keyup',onKeyUp);
@@ -696,10 +748,10 @@ createApp({
     });
 
     return {
-      phase,score,hp,level,cursor,wrongIdx,activeKeys,
+      phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,
       currentWords,flatLen,timerPct,kbRows,
       comboMsg,dmgFlash,mobileInput,penaltyMsg,
-      startGame,restartGame,pressKey,
+      startGame,pressKey,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
   }
