@@ -109,7 +109,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
   <input id="mobile-input" ref="mobileInput" type="text"
     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-    @keydown.prevent="onKeyDown" @keyup="onKeyUp" @input="onMobileInput" @blur="refocusMobile"/>
+    @input="onMobileInput" @blur="refocusMobile"/>
 
   <!-- Monster area -->
   <div id="monster-area" @click="focusMobile">
@@ -310,17 +310,15 @@ createApp({
     }
 
     function onKeyDown(e){
-      // Only prevent default to stop browser shortcuts, actual input handled on keyup
       if(phase.value!=='playing') return;
+      if(e.repeat) return;                    // ignore key-repeat (long press)
       if(e.isComposing || e.keyCode===229) return;
       if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
       e.preventDefault();
+      handleInput(e.key===' ' ? ' ' : e.key.toLowerCase());
     }
     function onKeyUp(e){
-      if(phase.value!=='playing') return;
-      if(e.isComposing || e.keyCode===229) return;
-      if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
-      handleInput(e.key===' ' ? ' ' : e.key.toLowerCase());
+      // keyup only used to prevent default, input handled on keydown
     }
     function pressKey(en){
       if(phase.value!=='playing') return;
