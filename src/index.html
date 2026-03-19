@@ -27,9 +27,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #mobile-input{position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0}
 
 /* ── Monster area ── */
-#monster-area{position:relative;flex:0 0 220px;background:linear-gradient(180deg,#16213e,#0f3460);border-bottom:2px solid #533483}
-@media(min-width:600px){#monster-area{flex:0 0 280px}}
-@media(min-width:900px){#monster-area{flex:0 0 320px}}
+#monster-area{position:relative;flex:1 1 auto;min-height:180px;background:linear-gradient(180deg,#16213e,#0f3460);border-bottom:2px solid #533483;overflow:hidden}
 #monster-canvas{display:block}
 #timer-bar-wrap{position:absolute;top:0;left:0;right:0;height:6px;background:#333}
 #timer-bar{height:100%;transition:width 0.1s linear;border-radius:0 3px 3px 0}
@@ -238,6 +236,23 @@ function sentenceToWords(s) {
 const PRAISES   = ['太棒了！','厲害！','完美！','超強！','好厲害！','無敵了！'];
 const MON_COLS  = [0xe74c3c,0x9b59b6,0x27ae60,0xf39c12,0x2980b9,0x16a085,0xc0392b];
 
+// ── Monster sprite config ──
+const MON_COLORS = ['blue','dark','green','red','white','yellow'];
+const BODY_VARIANTS = ['A','B','C','D','E','F'];
+const ARM_VARIANTS  = ['A','B','C','D','E'];
+const LEG_VARIANTS  = ['A','B','C','D','E'];
+const EYE_TYPES = [
+  'eye_angry_blue','eye_angry_green','eye_angry_red','eye_blue','eye_cute_dark',
+  'eye_cute_light','eye_human','eye_human_blue','eye_human_green','eye_human_red',
+  'eye_psycho_dark','eye_psycho_light','eye_red','eye_yellow'
+];
+const MOUTH_TYPES = [
+  'mouthA','mouthB','mouthC','mouthD','mouthE','mouthF','mouthG','mouthH','mouthI','mouthJ',
+  'mouth_closed_fangs','mouth_closed_happy','mouth_closed_sad','mouth_closed_teeth'
+];
+const DETAIL_TYPES = ['antenna_large','antenna_small','ear','ear_round','horn_large','horn_small'];
+let monsterTextures = null; // will hold {name -> PIXI.Texture}
+
 createApp({
   setup() {
     const phase         = ref('start');
@@ -327,19 +342,50 @@ createApp({
     }
 
     // ── Pixi ──
-    function initPixi(){
+    async function loadMonsterSheet(){
+      if(monsterTextures) return;
+      const xmlRes = await fetch('assets/monsters/spritesheet_default.xml');
+      const xmlText = await xmlRes.text();
+      const doc = new DOMParser().parseFromString(xmlText,'text/xml');
+      const baseTex = PIXI.BaseTexture.from('assets/monsters/spritesheet_default.png');
+      monsterTextures = {};
+      doc.querySelectorAll('SubTexture').forEach(st=>{
+        const name = st.getAttribute('name').replace('.png','');
+        const x=+st.getAttribute('x'), y=+st.getAttribute('y');
+        const w=+st.getAttribute('width'), h=+st.getAttribute('height');
+        monsterTextures[name] = new PIXI.Texture(baseTex, new PIXI.Rectangle(x,y,w,h));
+      });
+    }
+    function syncCanvasSize(){
       const area=document.getElementById('monster-area');
-      const W=area.clientWidth, H=area.clientHeight||220;
-      pixiApp=new PIXI.Application({view:document.getElementById('monster-canvas'),width:W,height:H,backgroundColor:0x0f3460,antialias:true});
+      const w=area.clientWidth, h=area.clientHeight;
+      if(pixiApp && (pixiApp.renderer.width!==w || pixiApp.renderer.height!==h)){
+        pixiApp.renderer.resize(w,h);
+      }
+      return {w,h};
+    }
+    async function initPixi(){
+      const area=document.getElementById('monster-area');
+      const w=area.clientWidth, h=area.clientHeight;
+      pixiApp=new PIXI.Application({view:document.getElementById('monster-canvas'),width:w,height:h,backgroundColor:0x0f3460,antialias:true});
+      await loadMonsterSheet();
+      syncCanvasSize();
+      spawnMonster();
+    }
+    function resizePixi(){
+      if(!pixiApp) return;
+      syncCanvasSize();
       spawnMonster();
     }
 
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
     function spawnMonster(){
-      if(!pixiApp) return;
+      if(!pixiApp||!monsterTextures) return;
       pixiApp.stage.removeChildren();
       const W=pixiApp.renderer.width,H=pixiApp.renderer.height;
-      const col=MON_COLS[Math.floor(Math.random()*MON_COLS.length)];
 
+      // stars background
       const stars=new PIXI.Graphics();
       for(let i=0;i<30;i++){
         stars.beginFill(0xffffff,Math.random()*0.5+0.1);
@@ -348,41 +394,140 @@ createApp({
       }
       pixiApp.stage.addChild(stars);
 
-      const mc=new PIXI.Container(); mc.x=W/2; mc.y=H/2+8;
+      const mc=new PIXI.Container(); mc.x=W/2;
       pixiApp.stage.addChild(mc);
       monster=mc;
 
-      const g=new PIXI.Graphics();
-      g.beginFill(col); g.drawRoundedRect(-26,-26,52,50,8); g.endFill();
-      g.beginFill(0xffffff); g.drawCircle(-10,-11,8); g.drawCircle(10,-11,8); g.endFill();
-      g.beginFill(0x000000); g.drawCircle(-9,-10,4); g.drawCircle(11,-10,4); g.endFill();
-      g.beginFill(0xffffff); g.drawCircle(-7,-8,1.5); g.drawCircle(13,-8,1.5); g.endFill();
-      g.lineStyle(2,0x000000); g.moveTo(-8,5); g.lineTo(8,5); g.lineStyle(0);
-      g.beginFill(col); g.drawRoundedRect(-44,-10,16,9,4); g.drawRoundedRect(28,-10,16,9,4); g.endFill();
-      g.beginFill(darken(col,0.65)); g.drawEllipse(-12,23,10,6); g.drawEllipse(12,23,10,6); g.endFill();
-      mc.addChild(g);
+      // pick random parts
+      const color = pick(MON_COLORS);
+      const bodyV = pick(BODY_VARIANTS);
+      const armV  = pick(ARM_VARIANTS);
+      const legV  = pick(LEG_VARIANTS);
+      const eyeType   = pick(EYE_TYPES);
+      const mouthType = pick(MOUTH_TYPES);
+
+      const tex = (name) => monsterTextures[name];
+
+      // body
+      const bodyTex = tex(`body_${color}${bodyV}`);
+      const bodySprite = new PIXI.Sprite(bodyTex);
+      bodySprite.anchor.set(0.5,0.5);
+      const bodyW = bodyTex.width, bodyH = bodyTex.height;
+
+      // calculate total monster height (top to bottom) for proper scaling
+      const legTex = tex(`leg_${color}${legV}`);
+      const legH = legTex ? legTex.height : 0;
+      const topExtent = bodyH*0.5 + 70/1; // body top half + HP bar space (in screen px, handled later)
+      const bottomExtent = bodyH*0.28 + legH; // leg offset + leg height
+      const totalH = bodyH*0.5 + bottomExtent; // body top half + bottom extent (sprite space)
+
+      // scale: fit entire monster (body+legs) within 80% of canvas, leave room for HP bar
+      const hpBarSpace = 80; // px reserved for HP bar above monster
+      const bottomPad = 30; // px padding at bottom
+      const availableH = H - hpBarSpace - bottomPad;
+      const sc = Math.min(availableH / totalH, 1.5);
+      mc.scale.set(sc);
+
+      // center monster vertically: offset so body center is above midpoint (legs hang below)
+      const monsterTopPx = bodyH*0.5*sc;    // body top half in px
+      const monsterBottomPx = bottomExtent*sc; // legs bottom in px
+      mc.y = hpBarSpace + monsterTopPx + (availableH - monsterTopPx - monsterBottomPx)/2;
+
+      // legs (behind body)
+      if(legTex){
+        const legL = new PIXI.Sprite(legTex);
+        legL.anchor.set(0.5,0);
+        legL.x = -bodyW*0.2; legL.y = bodyH*0.28;
+        mc.addChild(legL);
+        const legR = new PIXI.Sprite(legTex);
+        legR.anchor.set(0.5,0);
+        legR.x = bodyW*0.2; legR.y = bodyH*0.28;
+        mc.addChild(legR);
+      }
+
+      // arms (behind body)
+      const armTex = tex(`arm_${color}${armV}`);
+      if(armTex){
+        const armL = new PIXI.Sprite(armTex);
+        armL.anchor.set(0.8,0.2);
+        armL.x = -bodyW*0.42;  armL.y = -bodyH*0.05;
+        mc.addChild(armL);
+        const armR = new PIXI.Sprite(armTex);
+        armR.anchor.set(0.2,0.2);
+        armR.scale.x = -1; // mirror
+        armR.x = bodyW*0.42; armR.y = -bodyH*0.05;
+        mc.addChild(armR);
+      }
+
+      // body (on top)
+      mc.addChild(bodySprite);
+
+      // detail (horn/ear/antenna on top of body)
+      if(Math.random()>0.3){
+        const detailType = pick(DETAIL_TYPES);
+        const detailTex = tex(`detail_${color}_${detailType}`);
+        if(detailTex){
+          const detL = new PIXI.Sprite(detailTex);
+          detL.anchor.set(0.5,1);
+          detL.x = -bodyW*0.22; detL.y = -bodyH*0.38;
+          mc.addChild(detL);
+          const detR = new PIXI.Sprite(detailTex);
+          detR.anchor.set(0.5,1);
+          detR.scale.x = -1;
+          detR.x = bodyW*0.22; detR.y = -bodyH*0.38;
+          mc.addChild(detR);
+        }
+      }
+
+      // eyes
+      const eyeTex = tex(eyeType);
+      if(eyeTex){
+        const eyeL = new PIXI.Sprite(eyeTex);
+        eyeL.anchor.set(0.5,0.5);
+        eyeL.x = -bodyW*0.15; eyeL.y = -bodyH*0.1;
+        mc.addChild(eyeL);
+        const eyeR = new PIXI.Sprite(eyeTex);
+        eyeR.anchor.set(0.5,0.5);
+        eyeR.x = bodyW*0.15; eyeR.y = -bodyH*0.1;
+        mc.addChild(eyeR);
+      }
+
+      // mouth
+      const mouthTex = tex(mouthType);
+      if(mouthTex){
+        const mouth = new PIXI.Sprite(mouthTex);
+        mouth.anchor.set(0.5,0.5);
+        mouth.x = 0; mouth.y = bodyH*0.15;
+        mc.addChild(mouth);
+      }
+
+      // HP bar (drawn in screen space, not scaled with monster)
+      const hpContainer = new PIXI.Container();
+      hpContainer.scale.set(1/sc); // counter the monster scale
+      const bw=140;
+      const hpBg=new PIXI.Graphics();
+      hpBg.beginFill(0x333333); hpBg.drawRoundedRect(-bw/2,-70,bw,16,4); hpBg.endFill();
+      hpContainer.addChild(hpBg);
 
       monsterMaxHP=5+level.value*2; monsterHP=monsterMaxHP;
-      const bw=90;
-      const hpBg=new PIXI.Graphics();
-      hpBg.beginFill(0x333333); hpBg.drawRoundedRect(-bw/2,-50,bw,11,3); hpBg.endFill();
-      mc.addChild(hpBg);
-      hpBarFill=new PIXI.Graphics(); drawHPBar(); mc.addChild(hpBarFill);
-      hpText=new PIXI.Text(`${monsterHP}/${monsterMaxHP}`,{fontSize:8,fill:0xffffff,fontWeight:'bold'});
-      hpText.anchor.set(0.5,0); hpText.x=0; hpText.y=-50; mc.addChild(hpText);
+      hpBarFill=new PIXI.Graphics(); drawHPBar(); hpContainer.addChild(hpBarFill);
+      hpText=new PIXI.Text(`${monsterHP}/${monsterMaxHP}`,{fontSize:14,fill:0xffffff,fontWeight:'bold'});
+      hpText.anchor.set(0.5,0); hpText.x=0; hpText.y=-70; hpContainer.addChild(hpText);
+      mc.addChild(hpContainer);
 
       if(bounceTicker){pixiApp.ticker.remove(bounceTicker);bounceTicker=null;}
       let t=Math.random()*Math.PI*2;
-      bounceTicker=()=>{t+=0.04; mc.y=H/2+8+Math.sin(t)*5;};
+      const baseY=mc.y;
+      bounceTicker=()=>{t+=0.04; mc.y=baseY+Math.sin(t)*5;};
       pixiApp.ticker.add(bounceTicker);
     }
 
     function drawHPBar(){
       if(!hpBarFill) return;
-      const bw=90,pct=Math.max(0,monsterHP/monsterMaxHP);
+      const bw=140,pct=Math.max(0,monsterHP/monsterMaxHP);
       hpBarFill.clear();
       hpBarFill.beginFill(pct>0.5?0x2ecc71:pct>0.25?0xf39c12:0xe74c3c);
-      hpBarFill.drawRoundedRect(-bw/2,-50,bw*pct,11,3);
+      hpBarFill.drawRoundedRect(-bw/2,-70,bw*pct,16,4);
       hpBarFill.endFill();
       if(hpText) hpText.text=`${Math.max(0,monsterHP)}/${monsterMaxHP}`;
     }
@@ -457,21 +602,27 @@ createApp({
     }
 
     // ── Game control ──
-    function startGame(){
+    async function startGame(){
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
       phase.value='playing';
-      if(!pixiApp){setTimeout(()=>{initPixi();loadSentence();},50);}
-      else{spawnMonster();loadSentence();}
+      // wait for Vue to update DOM + CSS layout to settle
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      if(!pixiApp){
+        await initPixi();
+        loadSentence();
+      } else{syncCanvasSize();spawnMonster();loadSentence();}
     }
     function restartGame(){startGame();}
 
     onMounted(()=>{
       window.addEventListener('keydown',onKeyDown);
       window.addEventListener('keyup',onKeyUp);
+      window.addEventListener('resize',resizePixi);
     });
     onUnmounted(()=>{
       window.removeEventListener('keydown',onKeyDown);
       window.removeEventListener('keyup',onKeyUp);
+      window.removeEventListener('resize',resizePixi);
       clearInterval(timerInterval);
       if(wrongTimer) clearTimeout(wrongTimer);
       if(pixiApp) pixiApp.destroy();
