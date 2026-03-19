@@ -8,11 +8,19 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <style>
 :root{
-  /* Responsive key size driven by narrowest row (11 keys + 10 gaps of 3px) */
-  --key-w: clamp(22px, calc((100vw - 24px) / 11), 34px);
-  --key-h: clamp(30px, 5.5vh, 42px);
-  --zh-size: clamp(11px, 3.2vw, 16px);
+  /* Mobile default: fill screen width based on 11-key number row */
+  --key-w: clamp(22px, calc((100vw - 24px) / 11), 36px);
+  --key-h: clamp(30px, 5.5vh, 44px);
+  --zh-size: clamp(12px, 3.4vw, 17px);
   --en-size: clamp(7px, 2vw, 10px);
+}
+/* Tablet */
+@media(min-width:600px){
+  :root{--key-w:44px;--key-h:50px;--zh-size:20px;--en-size:11px;}
+}
+/* Desktop */
+@media(min-width:900px){
+  :root{--key-w:52px;--key-h:58px;--zh-size:24px;--en-size:13px;}
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column;user-select:none}
@@ -20,6 +28,8 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
 /* ── Monster area ── */
 #monster-area{position:relative;flex:0 0 220px;background:linear-gradient(180deg,#16213e,#0f3460);border-bottom:2px solid #533483}
+@media(min-width:600px){#monster-area{flex:0 0 280px}}
+@media(min-width:900px){#monster-area{flex:0 0 320px}}
 #monster-canvas{display:block}
 #timer-bar-wrap{position:absolute;top:0;left:0;right:0;height:6px;background:#333}
 #timer-bar{height:100%;transition:width 0.1s linear;border-radius:0 3px 3px 0}
@@ -131,7 +141,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
                :class="['zchar',{
                  'zc-correct': (word.startIdx+zi) < cursor,
                  'zc-current': (word.startIdx+zi) === cursor,
-                 'zc-wrong':   wrongIdx === (word.startIdx+zi)
+                 'zc-wrong':   wrongIdx === (word.startIdx+zi) && wrongIdx === cursor
                }]">{{zh}}</div>
         </div>
       </div>
@@ -313,7 +323,7 @@ createApp({
     // ── Pixi ──
     function initPixi(){
       const area=document.getElementById('monster-area');
-      const W=area.clientWidth, H=220;
+      const W=area.clientWidth, H=area.clientHeight||220;
       pixiApp=new PIXI.Application({view:document.getElementById('monster-canvas'),width:W,height:H,backgroundColor:0x0f3460,antialias:true});
       spawnMonster();
     }
