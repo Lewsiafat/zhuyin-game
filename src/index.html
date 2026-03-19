@@ -109,7 +109,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
   <input id="mobile-input" ref="mobileInput" type="text"
     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-    @keydown.prevent="onKeyDown" @input="onMobileInput" @blur="refocusMobile"/>
+    @keydown.prevent="onKeyDown" @keyup="onKeyUp" @input="onMobileInput" @blur="refocusMobile"/>
 
   <!-- Monster area -->
   <div id="monster-area" @click="focusMobile">
@@ -310,11 +310,16 @@ createApp({
     }
 
     function onKeyDown(e){
+      // Only prevent default to stop browser shortcuts, actual input handled on keyup
       if(phase.value!=='playing') return;
-      if(e.repeat) return;                          // ignore key-hold repeat events
-      if(e.isComposing || e.keyCode===229) return;  // ignore IME composition events
+      if(e.isComposing || e.keyCode===229) return;
       if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
       e.preventDefault();
+    }
+    function onKeyUp(e){
+      if(phase.value!=='playing') return;
+      if(e.isComposing || e.keyCode===229) return;
+      if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
       handleInput(e.key===' ' ? ' ' : e.key.toLowerCase());
     }
     function pressKey(en){
@@ -461,9 +466,13 @@ createApp({
     }
     function restartGame(){startGame();}
 
-    onMounted(()=>window.addEventListener('keydown',onKeyDown));
+    onMounted(()=>{
+      window.addEventListener('keydown',onKeyDown);
+      window.addEventListener('keyup',onKeyUp);
+    });
     onUnmounted(()=>{
       window.removeEventListener('keydown',onKeyDown);
+      window.removeEventListener('keyup',onKeyUp);
       clearInterval(timerInterval);
       if(wrongTimer) clearTimeout(wrongTimer);
       if(pixiApp) pixiApp.destroy();
@@ -474,7 +483,7 @@ createApp({
       currentWords,flatLen,timerPct,kbRows,
       comboMsg,dmgFlash,mobileInput,penaltyMsg,
       startGame,restartGame,pressKey,
-      onKeyDown,onMobileInput,focusMobile,refocusMobile,
+      onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
   }
 }).mount('#app');
