@@ -311,7 +311,9 @@ createApp({
 
     function onKeyDown(e){
       if(phase.value!=='playing') return;
-      if(['Tab','Enter','Shift','Control','Alt','Meta'].includes(e.key)) return;
+      if(e.repeat) return;                          // ignore key-hold repeat events
+      if(e.isComposing || e.keyCode===229) return;  // ignore IME composition events
+      if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
       e.preventDefault();
       handleInput(e.key===' ' ? ' ' : e.key.toLowerCase());
     }
