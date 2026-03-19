@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- **Dev server**: `npm start` → runs Express on `http://127.0.0.1:10007/zhuyin-game/`
-- **No build step, no tests, no linter** — this is a vanilla HTML/JS project served by Express.
+- **Dev server**: `npm run dev` → Vite dev server with hot reload
+- **Production server**: `npm start` → Express on `http://127.0.0.1:10007/zhuyin-game/`
+- **No build step, no tests, no linter** — this is a vanilla HTML/JS project.
 
 ## Architecture
 
@@ -40,7 +41,7 @@ Single-page app with all game logic in one file:
 
 ### Input Handling
 
-Uses `keyup` events (not `keydown`) to avoid key-repeat and IME composition false triggers. Mobile uses a hidden `<input>` element for focus. Virtual keyboard buttons fire `pressKey()` directly.
+Uses `keydown` events with `e.repeat` filter to avoid key-repeat, and `isComposing`/`keyCode===229` to filter IME composition. Only window-level listener is used (no duplicate binding on hidden input). Mobile uses a hidden `<input>` element for focus. Virtual keyboard buttons fire `pressKey()` directly.
 
 ## Deployment
 
