@@ -24,6 +24,9 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #hud .level{color:#a78bfa;font-size:13px}
 #combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:900;color:#ffd700;text-shadow:0 0 20px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s}
 #combo-msg.show{opacity:1}
+#penalty-msg{position:absolute;top:36%;right:16px;font-size:20px;font-weight:900;color:#f87171;text-shadow:0 0 12px #dc2626;pointer-events:none;opacity:0;transition:opacity 0.2s;transform:translateY(0)}
+#penalty-msg.show{opacity:1;animation:floatup 0.6s ease-out}
+@keyframes floatup{0%{transform:translateY(0)}100%{transform:translateY(-20px)}}
 #dmg-flash{position:absolute;inset:0;background:rgba(255,0,0,0);pointer-events:none;transition:background 0.15s}
 #dmg-flash.flash{background:rgba(255,0,0,0.35)}
 
@@ -87,6 +90,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div class="level">Lv.{{ level }}</div>
     </div>
     <div id="combo-msg" ref="comboMsg"></div>
+    <div id="penalty-msg" ref="penaltyMsg">⏱ -2秒</div>
     <div id="dmg-flash" ref="dmgFlash"></div>
   </div>
 
@@ -208,9 +212,10 @@ createApp({
     const currentSentence = ref([]);
     const timerPct   = ref(100);
     const kbRows     = ref(KB_ROWS);
-    const comboMsg   = ref(null);
-    const dmgFlash   = ref(null);
+    const comboMsg    = ref(null);
+    const dmgFlash    = ref(null);
     const mobileInput = ref(null);
+    const penaltyMsg  = ref(null);
 
     let pixiApp = null, monster = null;
     let monsterHP = 0, monsterMaxHP = 0;
@@ -218,6 +223,8 @@ createApp({
     let timerInterval = null;
     let timeLeft = 0, timeTotal = 0;
     let usedIdx = new Set();
+    let bounceTicker = null;   // track bounce ticker so we can remove it on respawn
+    const WRONG_PENALTY = 2000; // ms deducted per wrong key
 
     // ── Mobile input focus ──
     function focusMobile() {
@@ -265,8 +272,10 @@ createApp({
           setTimeout(() => loadSentence(), 500);
         }
       } else {
+        // Wrong key: flash red + deduct time
         wrongIdx.value = cursor.value;
         setTimeout(() => { wrongIdx.value = -1; }, 300);
+        applyTimePenalty();
       }
     }
 
@@ -357,10 +366,11 @@ createApp({
       hpText.anchor.set(0.5,0); hpText.x=0; hpText.y=-52;
       mc.addChild(hpText);
 
+      // remove previous bounce ticker before adding new one
+      if (bounceTicker) { pixiApp.ticker.remove(bounceTicker); bounceTicker = null; }
       let t = Math.random()*Math.PI*2;
-      pixiApp.ticker.add(()=>{
-        t+=0.04; mc.y = H/2+10+Math.sin(t)*5;
-      });
+      bounceTicker = ()=>{ t+=0.04; mc.y = H/2+10+Math.sin(t)*5; };
+      pixiApp.ticker.add(bounceTicker);
     }
 
     function drawHPBar() {
@@ -382,10 +392,13 @@ createApp({
 
     function killMonster() {
       if(!monster) return;
+      const dying = monster;  // capture dying monster — avoid affecting the next one
+      monster = null;
+      if(bounceTicker){ pixiApp.ticker.remove(bounceTicker); bounceTicker = null; }
       let sc=1;
       const tk = pixiApp.ticker.add(()=>{
         sc-=0.08;
-        if(monster){monster.scale.set(Math.max(0,sc));monster.alpha=sc;}
+        dying.scale.set(Math.max(0,sc)); dying.alpha=sc;
         if(sc<=0) pixiApp.ticker.remove(tk);
       });
       setTimeout(()=>spawnMonster(),600);
@@ -437,6 +450,16 @@ createApp({
       el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),700);
     }
 
+    function applyTimePenalty() {
+      timeLeft = Math.max(0, timeLeft - WRONG_PENALTY);
+      timerPct.value = Math.max(0, timeLeft / timeTotal * 100);
+      // show -2s penalty message
+      const el = penaltyMsg.value; if(!el) return;
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'), 600);
+      if(timeLeft <= 0){ clearInterval(timerInterval); onTimerExpire(); }
+    }
+
     // ── Game ──
     function startGame() {
       score.value=0; hp.value=3; level.value=1; usedIdx.clear();
@@ -459,7 +482,7 @@ createApp({
     return {
       phase, score, hp, level, cursor, wrongIdx,
       activeKeys, currentSentence, timerPct, kbRows,
-      comboMsg, dmgFlash, mobileInput,
+      comboMsg, dmgFlash, mobileInput, penaltyMsg,
       startGame, restartGame, pressKey,
       onKeyDown, onMobileInput, focusMobile, refocusMobile,
     };
