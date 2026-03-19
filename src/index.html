@@ -27,7 +27,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #mobile-input{position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0}
 
 /* ── Monster area ── */
-#monster-area{position:relative;flex:1 1 auto;min-height:180px;background:linear-gradient(180deg,#16213e,#0f3460);border-bottom:2px solid #533483;overflow:hidden}
+#monster-area{position:relative;flex:1 1 auto;min-height:180px;background:#87CEEB;border-bottom:2px solid #533483;overflow:hidden}
 #monster-canvas{display:block}
 #timer-bar-wrap{position:absolute;top:0;left:0;right:0;height:6px;background:#333}
 #timer-bar{height:100%;transition:width 0.1s linear;border-radius:0 3px 3px 0}
@@ -276,6 +276,7 @@ createApp({
     let monsterHP=0, monsterMaxHP=0;
     let hpBarFill=null, hpText=null;
     let timerInterval=null, bounceTicker=null;
+    let bgTextures=null; // background element textures
     let timeLeft=0, timeTotal=0;
     let usedIdx=new Set();
     let wrongTimer=null;      // debounce wrongIdx clear
@@ -364,11 +365,83 @@ createApp({
       }
       return {w,h};
     }
+    async function loadBgTextures(){
+      if(bgTextures) return;
+      const flat='assets/kenney_background-elements/PNG/Flat/';
+      const col='assets/kenney_background-elements/PNG/';
+      bgTextures={};
+      // full-width strips (Flat, tinted)
+      for(const n of ['clouds1','clouds2','pointy_mountains','hills1','hills2']){
+        bgTextures[n]=PIXI.Texture.from(flat+n+'.png');
+      }
+      // colored individual elements (no tint needed)
+      for(const n of ['tree02','tree03','cloud1','cloud2','castle_beige','sun']){
+        bgTextures[n]=PIXI.Texture.from(col+n+'.png');
+      }
+    }
+    function buildBackground(W,H){
+      const bg=new PIXI.Container();
+      if(!bgTextures) return bg;
+      // helper: add full-width strip
+      const strip=(name,tint,yRatio,scaleH)=>{
+        const sp=new PIXI.Sprite(bgTextures[name]);
+        sp.tint=tint;
+        sp.width=W;
+        sp.height=H*scaleH;
+        sp.y=H*yRatio;
+        bg.addChild(sp);
+      };
+      // helper: add individual element (colored, no tint)
+      const elem=(name,xRatio,yRatio,h,anchorY)=>{
+        const sp=new PIXI.Sprite(bgTextures[name]);
+        sp.anchor.set(0.5,anchorY??1);
+        sp.height=H*h;
+        sp.scale.x=sp.scale.y;
+        sp.x=W*xRatio;
+        sp.y=H*yRatio;
+        bg.addChild(sp);
+        return sp;
+      };
+      // sun
+      elem('sun',0.85,0.12,0.12,0.5);
+      // individual clouds (colored)
+      elem('cloud1',0.15,0.08,0.10,0.5);
+      elem('cloud2',0.55,0.14,0.08,0.5);
+      elem('cloud1',0.80,0.06,0.07,0.5);
+      // far mountains (Flat strip, tinted gray-blue)
+      strip('pointy_mountains',0x8BA5B0,0.30,0.30);
+      // far cloud strip
+      strip('clouds2',0xffffff,0.08,0.20);
+      // hills (Flat strips, tinted green)
+      strip('hills1',0x7CB342,0.55,0.22);
+      strip('hills2',0x558B2F,0.63,0.22);
+      // ground fill
+      const ground=new PIXI.Graphics();
+      ground.beginFill(0x6D4C41);
+      ground.drawRect(0,H*0.78,W,H*0.22);
+      ground.endFill();
+      // grass strip on ground
+      const grass=new PIXI.Graphics();
+      grass.beginFill(0x4CAF50);
+      grass.drawRect(0,H*0.76,W,H*0.04);
+      grass.endFill();
+      bg.addChild(ground);
+      bg.addChild(grass);
+      // trees & castle (colored PNGs)
+      elem('tree02',0.06,0.78,0.24);
+      elem('tree03',0.20,0.79,0.20);
+      elem('tree02',0.78,0.78,0.22);
+      const c=elem('castle_beige',0.92,0.74,0.28);
+      // mirror one tree for variety
+      const t=elem('tree03',0.65,0.80,0.18);
+      t.scale.x=-t.scale.y;
+      return bg;
+    }
     async function initPixi(){
       const area=document.getElementById('monster-area');
       const w=area.clientWidth, h=area.clientHeight;
-      pixiApp=new PIXI.Application({view:document.getElementById('monster-canvas'),width:w,height:h,backgroundColor:0x0f3460,antialias:true});
-      await loadMonsterSheet();
+      pixiApp=new PIXI.Application({view:document.getElementById('monster-canvas'),width:w,height:h,backgroundColor:0x87CEEB,antialias:true});
+      await Promise.all([loadMonsterSheet(), loadBgTextures()]);
       syncCanvasSize();
       spawnMonster();
     }
@@ -385,14 +458,8 @@ createApp({
       pixiApp.stage.removeChildren();
       const W=pixiApp.renderer.width,H=pixiApp.renderer.height;
 
-      // stars background
-      const stars=new PIXI.Graphics();
-      for(let i=0;i<30;i++){
-        stars.beginFill(0xffffff,Math.random()*0.5+0.1);
-        stars.drawCircle(Math.random()*W,Math.random()*H,Math.random()*1.5+0.5);
-        stars.endFill();
-      }
-      pixiApp.stage.addChild(stars);
+      // layered background
+      pixiApp.stage.addChild(buildBackground(W,H));
 
       const mc=new PIXI.Container(); mc.x=W/2;
       pixiApp.stage.addChild(mc);
