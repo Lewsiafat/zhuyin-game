@@ -39,6 +39,10 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #hud .mode-badge.practice{background:#065f46;color:#34d399}
 #hud .mode-badge.timeattack{background:#1e1b4b;color:#818cf8}
 #hud .combo-hud{font-size:13px;font-weight:900;padding:2px 8px;border-radius:8px;transition:all 0.2s;white-space:nowrap}
+#hud .tier-badge{font-size:11px;padding:2px 7px;border-radius:8px;font-weight:700}
+#hud .tier-badge.t1{background:#1e3a5f;color:#7dd3fc}
+#hud .tier-badge.t2{background:#3b1f6e;color:#c4b5fd}
+#hud .tier-badge.t3{background:#7c1d1d;color:#fca5a5}
 #combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;color:#ffd700;text-shadow:0 0 16px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap}
 #combo-msg.show{opacity:1}
 #crit-msg{position:absolute;top:58%;left:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:900;color:#ff9500;text-shadow:0 0 20px #ffd700,0 0 40px #ff6600;pointer-events:none;opacity:0;white-space:nowrap}
@@ -147,6 +151,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div v-if="phase==='playing'" :class="['mode-badge', mode]">
         {{mode==='practice'?'練習':'限時'}}
       </div>
+      <div v-if="phase==='playing'" :class="['tier-badge','t'+tierNum]">{{tierLabel}}</div>
       <div v-if="combo>=2" class="combo-hud"
            :style="{background:combo>=10?'#7c2d12':combo>=5?'#92400e':'#1e1b4b',
                     color:combo>=10?'#fca5a5':combo>=5?'#fcd34d':'#a5b4fc'}">
@@ -216,7 +221,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       </div>
       <div class="mode-card purple" @click="startGame('timeattack')">
         <h2>⚡ 限時模式</h2>
-        <p>依字句長度動態計時，打錯扣 2 秒<br>時間到扣 HP ❤️ — 越長的句子時間越多</p>
+        <p>依字句長度動態計時，打錯扣 2 秒<br>時間到扣 HP ❤️ — 越長的句子時間越多<br>Lv1初學 → Lv4中級 → Lv7高級</p>
       </div>
     </div>
   </div>
@@ -262,22 +267,50 @@ const KEY_TO_ZH = {};
 KB_ROWS.flat().forEach(k => { KEY_TO_ZH[k.en] = k.zh; });
 KEY_TO_ZH[' '] = 'SPC_ZH'; // internal marker for space
 
-// ── Sentence pool: words with hanzi + zhuyin groups ──
-const SENTENCES = [
-  // Short
-  { words:[{h:'你',z:['ㄋ','ㄧ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
-  { words:[{h:'謝',z:['ㄒ','ㄧ','ㄝ','ˋ']},{h:'謝',z:['ㄒ','ㄧ','ㄝ']}] },
-  { words:[{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']}] },
-  { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'吃',z:['ㄔ']}] },
-  // Medium
-  { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'愛',z:['ㄞ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'習',z:['ㄒ','ㄧ','ˊ']}] },
-  { words:[{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'氣',z:['ㄑ','ㄧ','ˋ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
-  { words:[{h:'小',z:['ㄒ','ㄧ','ㄠ','ˇ']},{h:'朋',z:['ㄆ','ㄥ','ˊ']},{h:'友',z:['ㄧ','ㄡ','ˇ']}] },
-  { words:[{h:'早',z:['ㄗ','ㄠ','ˇ']},{h:'上',z:['ㄕ','ㄤ','ˋ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
-  // Longer
-  { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'喜',z:['ㄒ','ㄧ','ˇ']},{h:'歡',z:['ㄏ','ㄨ','ㄢ']},{h:'巧',z:['ㄑ','ㄧ','ㄠ','ˊ']},{h:'克',z:['ㄎ','ㄜ','ˋ']},{h:'力',z:['ㄌ','ㄧ','ˋ']}] },
-  { words:[{h:'注',z:['ㄓ','ㄨ','ˋ']},{h:'音',z:['ㄧ','ㄣ']},{h:'打',z:['ㄉ','ㄚ','ˋ']},{h:'字',z:['ㄗ','ˋ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'酷',z:['ㄎ','ㄨ','ˋ']}] },
-];
+// ── Tiered sentence pool ──
+// Tier 1 初學：2-3字、常見聲母、簡單韻母
+// Tier 2 中級：3-5字、複合韻母、混合聲調
+// Tier 3 高級：5字以上、捲舌音、複雜韻母、四聲混用
+const SENTENCE_TIERS = {
+  1: [
+    { words:[{h:'你',z:['ㄋ','ㄧ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'謝',z:['ㄒ','ㄧ','ㄝ','ˋ']},{h:'謝',z:['ㄒ','ㄧ','ㄝ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'吃',z:['ㄔ']}] },
+    { words:[{h:'爸',z:['ㄅ','ㄚ','ˋ']},{h:'爸',z:['ㄅ','ㄚ']}] },
+    { words:[{h:'媽',z:['ㄇ','ㄚ']},{h:'媽',z:['ㄇ','ㄚ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'棒',z:['ㄅ','ㄤ','ˋ']}] },
+    { words:[{h:'太',z:['ㄊ','ㄞ','ˋ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'了',z:['ㄌ','ㄜ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'愛',z:['ㄞ','ˋ']},{h:'你',z:['ㄋ','ㄧ','ˇ']}] },
+    { words:[{h:'大',z:['ㄉ','ㄚ','ˋ']},{h:'家',z:['ㄐ','ㄧ','ㄚ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'老',z:['ㄌ','ㄠ','ˇ']},{h:'師',z:['ㄕ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'下',z:['ㄒ','ㄧ','ㄚ','ˋ']},{h:'課',z:['ㄎ','ㄜ','ˋ']},{h:'了',z:['ㄌ','ㄜ']}] },
+    { words:[{h:'弟',z:['ㄉ','ㄧ','ˋ']},{h:'弟',z:['ㄉ','ㄧ']}] },
+  ],
+  2: [
+    { words:[{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']}] },
+    { words:[{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'氣',z:['ㄑ','ㄧ','ˋ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'早',z:['ㄗ','ㄠ','ˇ']},{h:'上',z:['ㄕ','ㄤ','ˋ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'小',z:['ㄒ','ㄧ','ㄠ','ˇ']},{h:'朋',z:['ㄆ','ㄥ','ˊ']},{h:'友',z:['ㄧ','ㄡ','ˇ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'愛',z:['ㄞ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'習',z:['ㄒ','ㄧ','ˊ']}] },
+    { words:[{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'快',z:['ㄎ','ㄨ','ㄞ','ˋ']},{h:'樂',z:['ㄌ','ㄜ','ˋ']}] },
+    { words:[{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'美',z:['ㄇ','ㄟ','ˇ']}] },
+    { words:[{h:'打',z:['ㄉ','ㄚ','ˇ']},{h:'電',z:['ㄉ','ㄧ','ㄢ','ˋ']},{h:'話',z:['ㄏ','ㄨ','ㄚ','ˋ']}] },
+    { words:[{h:'一',z:['ㄧ']},{h:'起',z:['ㄑ','ㄧ','ˇ']},{h:'加',z:['ㄐ','ㄧ','ㄚ']},{h:'油',z:['ㄧ','ㄡ','ˊ']}] },
+    { words:[{h:'今',z:['ㄐ','ㄧ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'上',z:['ㄕ','ㄤ','ˋ']},{h:'課',z:['ㄎ','ㄜ','ˋ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'是',z:['ㄕ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'生',z:['ㄕ','ㄥ']}] },
+    { words:[{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'校',z:['ㄒ','ㄧ','ㄠ','ˋ']},{h:'不',z:['ㄅ','ㄨ','ˋ']},{h:'遠',z:['ㄩ','ㄢ','ˇ']}] },
+  ],
+  3: [
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'喜',z:['ㄒ','ㄧ','ˇ']},{h:'歡',z:['ㄏ','ㄨ','ㄢ']},{h:'巧',z:['ㄑ','ㄧ','ㄠ','ˊ']},{h:'克',z:['ㄎ','ㄜ','ˋ']},{h:'力',z:['ㄌ','ㄧ','ˋ']}] },
+    { words:[{h:'注',z:['ㄓ','ㄨ','ˋ']},{h:'音',z:['ㄧ','ㄣ']},{h:'打',z:['ㄉ','ㄚ','ˋ']},{h:'字',z:['ㄗ','ˋ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'酷',z:['ㄎ','ㄨ','ˋ']}] },
+    { words:[{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'山',z:['ㄕ','ㄢ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'水',z:['ㄕ','ㄨ','ㄟ','ˇ']}] },
+    { words:[{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'習',z:['ㄒ','ㄧ','ˊ']},{h:'注',z:['ㄓ','ㄨ','ˋ']},{h:'音',z:['ㄧ','ㄣ']},{h:'符',z:['ㄈ','ㄨ','ˊ']},{h:'號',z:['ㄏ','ㄠ','ˋ']}] },
+    { words:[{h:'努',z:['ㄋ','ㄨ','ˇ']},{h:'力',z:['ㄌ','ㄧ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'習',z:['ㄒ','ㄧ','ˊ']},{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'一',z:['ㄧ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'們',z:['ㄇ','ㄣ']},{h:'一',z:['ㄧ']},{h:'起',z:['ㄑ','ㄧ','ˇ']},{h:'去',z:['ㄑ','ㄩ','ˋ']},{h:'爬',z:['ㄆ','ㄚ','ˊ']},{h:'山',z:['ㄕ','ㄢ']}] },
+    { words:[{h:'今',z:['ㄐ','ㄧ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'是',z:['ㄕ','ˋ']},{h:'個',z:['ㄍ','ㄜ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'日',z:['ㄖ','ˋ']},{h:'子',z:['ㄗ']}] },
+    { words:[{h:'春',z:['ㄔ','ㄨ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'花',z:['ㄏ','ㄨ','ㄚ']},{h:'草',z:['ㄘ','ㄠ','ˇ']},{h:'都',z:['ㄉ','ㄡ']},{h:'開',z:['ㄎ','ㄞ']},{h:'了',z:['ㄌ','ㄜ']}] },
+  ],
+};
 
 function sentenceToFlat(s) {
   return s.words.flatMap(w => w.z);
@@ -325,6 +358,8 @@ createApp({
     const currentWords  = ref([]);   // [{h, z, startIdx}, ...]
     const flatSentence  = ref([]);   // flat zhuyin array
     const flatLen       = computed(() => flatSentence.value.length);
+    const tierNum       = computed(()=> level.value<=3?1:level.value<=6?2:3);
+    const tierLabel     = computed(()=>['','初學','中級','高級'][tierNum.value]);
     const timerPct      = ref(100);
     const kbRows        = ref(KB_ROWS);
     const comboMsg      = ref(null);
@@ -730,8 +765,14 @@ createApp({
     }
 
     // ── Sentence ──
+    let lastTier=0;
     function pickSentence(){
-      const pool=level.value<=2?SENTENCES.slice(0,4):level.value<=4?SENTENCES.slice(2,8):SENTENCES.slice(5);
+      const t=tierNum.value;
+      // Reset usedIdx when tier changes so new pool is fresh
+      if(t!==lastTier){ usedIdx.clear(); lastTier=t; }
+      const pool = t===1 ? SENTENCE_TIERS[1]
+                 : t===2 ? [...SENTENCE_TIERS[1],...SENTENCE_TIERS[2]]
+                 :         [...SENTENCE_TIERS[2],...SENTENCE_TIERS[3]];
       if(usedIdx.size>=pool.length) usedIdx.clear();
       let idx; do{idx=Math.floor(Math.random()*pool.length);}while(usedIdx.has(idx));
       usedIdx.add(idx);
@@ -811,7 +852,7 @@ createApp({
     });
 
     return {
-      phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,
+      phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,tierNum,tierLabel,
       currentWords,flatLen,timerPct,kbRows,
       comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,
       startGame,pressKey,
