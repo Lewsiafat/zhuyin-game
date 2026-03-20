@@ -38,8 +38,12 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 #hud .mode-badge{font-size:11px;padding:2px 7px;border-radius:8px;font-weight:700}
 #hud .mode-badge.practice{background:#065f46;color:#34d399}
 #hud .mode-badge.timeattack{background:#1e1b4b;color:#818cf8}
+#hud .combo-hud{font-size:13px;font-weight:900;padding:2px 8px;border-radius:8px;transition:all 0.2s;white-space:nowrap}
 #combo-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;color:#ffd700;text-shadow:0 0 16px #ff9500;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap}
 #combo-msg.show{opacity:1}
+#crit-msg{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:900;color:#ff9500;text-shadow:0 0 20px #ffd700,0 0 40px #ff6600;pointer-events:none;opacity:0;white-space:nowrap}
+#crit-msg.show{opacity:1;animation:critpop 0.5s ease-out forwards}
+@keyframes critpop{0%{transform:translate(-50%,-50%) scale(0.5)}40%{transform:translate(-50%,-50%) scale(1.3)}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 #penalty-msg{position:absolute;top:30%;right:14px;font-size:18px;font-weight:900;color:#f87171;text-shadow:0 0 10px #dc2626;pointer-events:none;opacity:0;white-space:nowrap}
 #penalty-msg.show{opacity:1;animation:floatup 0.6s ease-out forwards}
 @keyframes floatup{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-22px);opacity:0}}
@@ -143,8 +147,14 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div v-if="phase==='playing'" :class="['mode-badge', mode]">
         {{mode==='practice'?'練習':'限時'}}
       </div>
+      <div v-if="combo>=2" class="combo-hud"
+           :style="{background:combo>=10?'#7c2d12':combo>=5?'#92400e':'#1e1b4b',
+                    color:combo>=10?'#fca5a5':combo>=5?'#fcd34d':'#a5b4fc'}">
+        🔥 {{combo}} 連擊{{combo>=5?'　⚡CRIT':''}}
+      </div>
     </div>
     <div id="combo-msg" ref="comboMsg"></div>
+    <div id="crit-msg" ref="critMsg">💥 爆擊！</div>
     <div id="penalty-msg" ref="penaltyMsg" v-show="mode==='timeattack'">⏱ -2秒</div>
     <div id="dmg-flash" ref="dmgFlash"></div>
   </div>
@@ -318,9 +328,11 @@ createApp({
     const timerPct      = ref(100);
     const kbRows        = ref(KB_ROWS);
     const comboMsg      = ref(null);
+    const critMsg       = ref(null);
     const dmgFlash      = ref(null);
     const mobileInput   = ref(null);
     const penaltyMsg    = ref(null);
+    const combo         = ref(0);  // reactive for HUD display
 
     let pixiApp=null, monster=null;
     let monsterHP=0, monsterMaxHP=0;
@@ -330,7 +342,9 @@ createApp({
     let timeLeft=0, timeTotal=0;
     let usedIdx=new Set();
     let wrongTimer=null;      // debounce wrongIdx clear
+    let comboCount=0;         // internal combo counter
     const WRONG_PENALTY=2000;
+    const CRIT_EVERY=5;       // crit on every Nth hit in combo
 
     // ── Focus ──
     function focusMobile(){ if(mobileInput.value) mobileInput.value.focus(); }
@@ -357,8 +371,14 @@ createApp({
           if(wrongTimer){ clearTimeout(wrongTimer); wrongTimer=null; }
           wrongIdx.value=-1;
         }
+        // Combo + crit
+        comboCount++;
+        combo.value=comboCount;
+        const isCrit = comboCount>=CRIT_EVERY && comboCount%CRIT_EVERY===0;
         cursor.value++;
-        damageMonster();
+        damageMonster(isCrit);
+        spawnDmgNumber(isCrit);
+        if(isCrit) showCrit();
         if(cursor.value>=flatSentence.value.length){
           clearInterval(timerInterval);
           score.value++;
@@ -368,7 +388,8 @@ createApp({
           setTimeout(()=>loadSentence(),500);
         }
       } else {
-        // Wrong: set wrongIdx with debounced clear
+        // Wrong: reset combo, set wrongIdx
+        comboCount=0; combo.value=0;
         if(wrongTimer) clearTimeout(wrongTimer);
         wrongIdx.value=cursor.value;
         wrongTimer=setTimeout(()=>{ wrongIdx.value=-1; wrongTimer=null; },350);
@@ -648,9 +669,48 @@ createApp({
       hpBarFill.endFill();
       if(hpText) hpText.text=`${Math.max(0,monsterHP)}/${monsterMaxHP}`;
     }
-    function damageMonster(){
-      monsterHP--; drawHPBar();
-      if(monster){monster.alpha=0.4;setTimeout(()=>{if(monster)monster.alpha=1;},100);}
+    function damageMonster(isCrit){
+      const dmg = isCrit ? 2 : 1;
+      monsterHP-=dmg; drawHPBar();
+      if(monster){
+        monster.alpha=0.4;
+        if(isCrit){
+          // golden tint flash on crit
+          monster.children.forEach(c=>{ if(c.tint!==undefined) c.tint=0xffd700; });
+          setTimeout(()=>{ if(monster) monster.children.forEach(c=>{ if(c.tint!==undefined) c.tint=0xffffff; }); },120);
+        }
+        setTimeout(()=>{if(monster)monster.alpha=1;},100);
+      }
+    }
+
+    // Floating damage number via Pixi
+    function spawnDmgNumber(isCrit){
+      if(!pixiApp||!monster) return;
+      const x=monster.x+(Math.random()-0.5)*60;
+      const y=monster.y-50+(Math.random()-0.5)*20;
+      const style=isCrit
+        ?{fontSize:28,fill:0xffd700,fontWeight:'bold',stroke:0xff6600,strokeThickness:3,dropShadow:true,dropShadowBlur:4}
+        :{fontSize:20,fill:0xffffff,fontWeight:'bold',stroke:0x333333,strokeThickness:2};
+      const txt=new PIXI.Text(isCrit?'💥 x2':'＋１',style);
+      txt.anchor.set(0.5,0.5); txt.x=x; txt.y=y;
+      pixiApp.stage.addChild(txt);
+      let elapsed=0;
+      const dur=isCrit?0.9:0.6;
+      const speed=isCrit?2.2:1.6;
+      const tk=pixiApp.ticker.add(delta=>{
+        elapsed+=delta/60;
+        txt.y-=delta*speed;
+        txt.alpha=Math.max(0,1-elapsed/dur);
+        if(elapsed>=dur){pixiApp.stage.removeChild(txt);pixiApp.ticker.remove(tk);}
+      });
+    }
+
+    function showCrit(){
+      const el=critMsg.value; if(!el) return;
+      el.classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'),600);
     }
     function killMonster(){
       if(!monster) return;
@@ -724,6 +784,7 @@ createApp({
     async function startGame(m){
       mode.value=m||'timeattack';
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
+      comboCount=0; combo.value=0;
       clearInterval(timerInterval);
       phase.value='playing';
       // wait for Vue to update DOM + CSS layout to settle
@@ -748,9 +809,9 @@ createApp({
     });
 
     return {
-      phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,
+      phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,
       currentWords,flatLen,timerPct,kbRows,
-      comboMsg,dmgFlash,mobileInput,penaltyMsg,
+      comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,
       startGame,pressKey,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
