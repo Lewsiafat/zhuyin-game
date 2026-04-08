@@ -153,12 +153,49 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
 /* ── Pause overlay ── */
 #pause-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,0.78);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:fixed;inset:0;background:rgba(0,0,0,0.82);
+  display:flex;align-items:center;justify-content:center;
   z-index:200;
 }
-#pause-overlay h2{font-size:clamp(28px,7vw,40px);color:#a78bfa;margin-bottom:8px;text-shadow:0 0 20px #7c3aed}
-#pause-overlay p{color:#64748b;font-size:clamp(12px,3vw,14px);margin-bottom:20px}
+#pause-card{
+  background:#13132a;border:1px solid #4f46e5;border-radius:20px;
+  padding:24px 28px;width:min(300px,90vw);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  box-shadow:0 8px 40px rgba(79,70,229,0.35);
+  animation:pausein 0.2s ease-out;
+}
+@keyframes pausein{from{transform:scale(0.92);opacity:0}to{transform:scale(1);opacity:1}}
+#pause-card h2{font-size:clamp(22px,6vw,28px);color:#a78bfa;margin-bottom:4px;text-shadow:0 0 20px #7c3aed;letter-spacing:2px}
+#pause-card .pause-hint{font-size:11px;color:#475569;margin-bottom:6px}
+.pause-btn{
+  width:100%;padding:10px 0;border:none;border-radius:10px;
+  font-size:clamp(14px,3.5vw,16px);font-weight:700;cursor:pointer;
+  transition:all 0.12s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.pause-btn:active{transform:scale(0.97)}
+.pause-btn.resume{background:#4f46e5;color:#fff}
+.pause-btn.resume:hover{background:#6366f1}
+.pause-btn.quit{background:#1e1e3a;color:#94a3b8;border:1px solid #2d2d5a}
+.pause-btn.quit:hover{border-color:#f87171;color:#f87171}
+.pause-btn.newgame{background:#1e1e3a;color:#94a3b8;border:1px solid #2d2d5a}
+.pause-btn.newgame:hover{border-color:#34d399;color:#34d399}
+.pause-divider{width:100%;height:1px;background:#1e1e3a;margin:2px 0}
+.pause-toggles{width:100%;display:flex;gap:8px}
+.toggle-btn{
+  flex:1;padding:9px 0;border-radius:10px;border:1px solid #2d2d5a;
+  background:#1e1e3a;font-size:clamp(12px,3vw,13px);font-weight:700;
+  cursor:pointer;transition:all 0.12s;color:#64748b;
+}
+.toggle-btn.on{border-color:#a78bfa;color:#c4b5fd;background:#1e1a3a}
+.toggle-btn:active{transform:scale(0.97)}
+
+/* ── Pause button in HUD ── */
+#pause-btn{
+  font-size:15px;cursor:pointer;background:none;border:none;
+  padding:2px 5px;border-radius:6px;line-height:1;
+  opacity:0.7;transition:opacity 0.15s;color:#e0e7ff;
+}
+#pause-btn:hover{opacity:1}
 
 /* ── Level-up message ── */
 #levelup-msg{
@@ -270,7 +307,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div class="hp"><span v-for="i in 3" :key="i">{{hp>=i?'❤️':'🖤'}}</span></div>
       <div class="score">⭐ {{score}}</div>
       <div class="level">Lv.{{level}}</div>
-      <button id="bgm-btn" @click="toggleBGM" title="背景音樂">{{isBgmMuted?'🔇':'🔊'}}</button>
+      <button v-if="phase==='playing'" id="pause-btn" @click="togglePause" title="暫停 (P)">⏸</button>
       <div v-if="phase==='playing'" :class="['mode-badge', mode]">
         {{mode==='practice'?'練習':'限時'}}
       </div>
@@ -342,9 +379,22 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
   <!-- Pause overlay -->
   <div id="pause-overlay" v-if="isPaused">
-    <h2>⏸ PAUSED</h2>
-    <p>按 ESC 或 P 繼續遊戲</p>
-    <button class="btn" @click="togglePause">繼續 ▶</button>
+    <div id="pause-card">
+      <h2>⏸ PAUSED</h2>
+      <div class="pause-hint">ESC 或 P 繼續</div>
+      <button class="pause-btn resume" @click="togglePause">▶ 繼續遊戲</button>
+      <button class="pause-btn newgame" @click="restartGame">🔄 新遊戲</button>
+      <button class="pause-btn quit" @click="quitGame">🏠 停止遊戲</button>
+      <div class="pause-divider"></div>
+      <div class="pause-toggles">
+        <button :class="['toggle-btn',{on:!isSfxMuted}]" @click="toggleSFX">
+          {{isSfxMuted?'🔕':'🔔'}} 音效{{isSfxMuted?'關':'開'}}
+        </button>
+        <button :class="['toggle-btn',{on:!isBgmMuted}]" @click="toggleBGM">
+          {{isBgmMuted?'🎵':'🎶'}} 音樂{{isBgmMuted?'關':'開'}}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Overlays -->
@@ -578,6 +628,7 @@ function ensureAudio() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 function playSound(type) {
+  if (sfxMuted) return;
   try {
     ensureAudio();
     const now = audioCtx.currentTime;
@@ -696,6 +747,9 @@ const TUTORIAL_STEPS = [
   { key:'4', zh:'ˋ', hint:'四聲（ˋ）→ 數字鍵 4' },
 ];
 
+// ── SFX mute flag ──
+let sfxMuted = false;
+
 // ── BGM engine ──
 const BGM_NOTES = [523,659,784,659,523,587,784,587,523,659,784,880,784,659,523,392];
 const BGM_DURS  = [0.3,0.3,0.3,0.3,0.6,0.3,0.3,0.6,0.3,0.3,0.3,0.3,0.3,0.3,0.6,0.6];
@@ -761,8 +815,9 @@ createApp({
     const correctPresses= ref(0);     // correct presses for accuracy
     const maxComboReached = ref(0);   // peak combo this session
     const levelupMsg    = ref(null);  // ref to #levelup-msg DOM element
-    // ── P2: BGM ──
+    // ── P2: BGM / SFX ──
     const isBgmMuted    = ref(true);
+    const isSfxMuted    = ref(false);
     // ── P2: Achievements ──
     const unlockedAchs  = ref(new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]')));
     const achToast      = ref(null);  // currently shown achievement {icon,name,desc}
@@ -804,12 +859,26 @@ createApp({
       }
     })();
 
-    // ── BGM controls ──
+    // ── BGM / SFX controls ──
     function toggleBGM() {
       bgmMuted = !bgmMuted;
       isBgmMuted.value = bgmMuted;
       if (bgmMuted) { stopBGM(); }
       else { ensureAudio(); startBGM(); }
+    }
+    function toggleSFX() {
+      sfxMuted = !sfxMuted;
+      isSfxMuted.value = sfxMuted;
+    }
+    function quitGame() {
+      stopBGM();
+      clearInterval(timerInterval);
+      isPaused.value = false;
+      phase.value = 'start';
+    }
+    function restartGame() {
+      isPaused.value = false;
+      startGame(mode.value === 'daily' ? null : mode.value, mode.value === 'daily');
     }
 
     // ── Achievement system ──
@@ -1439,12 +1508,12 @@ createApp({
       currentWords,flatLen,timerPct,kbRows,bestScore,isNewBest,
       wrongHintKey,isPaused,accuracy,maxComboReached,isBossLevel,
       // P2
-      isBgmMuted,achToast,achUnlockedCount,ACHIEVEMENTS,unlockedAchs,
+      isBgmMuted,isSfxMuted,achToast,achUnlockedCount,ACHIEVEMENTS,unlockedAchs,
       dailyBest,dailyDoneToday,
       tutStep,tutWrong,tutDone,tutTargetKey,tutCurrentStep,TUTORIAL_STEPS,
       comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,levelupMsg,
-      startGame,pressKey,togglePause,
-      toggleBGM,startTutorial,startDaily,
+      startGame,pressKey,togglePause,quitGame,restartGame,
+      toggleBGM,toggleSFX,startTutorial,startDaily,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
   }
