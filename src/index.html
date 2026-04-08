@@ -141,6 +141,49 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   animation:newbest 0.5s ease-out 3;
 }
 @keyframes newbest{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* ── Hint key (答錯目標鍵高亮) ── */
+.kkey.hint{
+  background:#3d3000!important;border-color:#fbbf24!important;
+  box-shadow:0 0 14px rgba(251,191,36,0.7)!important;
+  animation:keyhint 0.6s ease-in-out infinite alternate;
+}
+.kkey.hint .zh{color:#fbbf24!important}
+@keyframes keyhint{from{box-shadow:0 0 6px rgba(251,191,36,0.4)}to{box-shadow:0 0 18px rgba(251,191,36,0.9)}}
+
+/* ── Pause overlay ── */
+#pause-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.78);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;
+}
+#pause-overlay h2{font-size:clamp(28px,7vw,40px);color:#a78bfa;margin-bottom:8px;text-shadow:0 0 20px #7c3aed}
+#pause-overlay p{color:#64748b;font-size:clamp(12px,3vw,14px);margin-bottom:20px}
+
+/* ── Level-up message ── */
+#levelup-msg{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  font-size:clamp(20px,5vw,28px);font-weight:900;color:#ffd700;
+  text-shadow:0 0 20px #f97316,0 0 40px #fbbf24;
+  pointer-events:none;opacity:0;white-space:nowrap;
+}
+#levelup-msg.show{opacity:1;animation:levelup 1s ease-out forwards}
+@keyframes levelup{
+  0%{transform:translate(-50%,-50%) scale(0.6);opacity:1}
+  40%{transform:translate(-50%,-50%) scale(1.2);opacity:1}
+  100%{transform:translate(-50%,-80%) scale(1);opacity:0}
+}
+
+/* ── Boss indicator ── */
+.boss-glow{box-shadow:0 0 40px rgba(255,200,0,0.5),0 0 80px rgba(255,100,0,0.3)!important}
+#boss-label{
+  position:absolute;top:14px;right:14px;
+  background:linear-gradient(135deg,#7c1d1d,#9a3412);
+  color:#fca5a5;font-size:11px;font-weight:900;
+  padding:3px 10px;border-radius:8px;
+  border:1px solid #f87171;letter-spacing:1px;
+  text-shadow:0 0 8px rgba(248,113,113,0.8);
+}
 </style>
 </head>
 <body>
@@ -151,7 +194,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     @input="onMobileInput" @blur="refocusMobile"/>
 
   <!-- Monster area -->
-  <div id="monster-area" @click="focusMobile">
+  <div id="monster-area" @click="focusMobile" :class="{'boss-glow':isBossLevel&&phase==='playing'}">
     <div id="timer-bar-wrap" v-show="mode==='timeattack'">
       <div id="timer-bar" :style="{width:timerPct+'%',background:timerPct<30?'#f87171':'#00d4ff'}"></div>
     </div>
@@ -174,6 +217,8 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     <div id="crit-msg" ref="critMsg">💥 爆擊！</div>
     <div id="penalty-msg" ref="penaltyMsg" v-show="mode==='timeattack'">⏱ -2秒</div>
     <div id="dmg-flash" ref="dmgFlash"></div>
+    <div v-if="isBossLevel&&phase==='playing'" id="boss-label">👑 BOSS</div>
+    <div id="levelup-msg" ref="levelupMsg"></div>
   </div>
 
   <!-- Sentence display with hanzi above zhuyin groups -->
@@ -204,13 +249,20 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   <div id="keyboard-area">
     <div v-for="(row,ri) in kbRows" :key="ri" class="kb-row">
       <div v-for="k in row" :key="k.en"
-           :class="['kkey',{active:activeKeys.has(k.en),tone:k.tone,spc:k.en==='SPC'}]"
+           :class="['kkey',{active:activeKeys.has(k.en),tone:k.tone,spc:k.en==='SPC',hint:wrongHintKey===k.en}]"
            @mousedown.prevent="pressKey(k.en)"
            @touchstart.prevent="pressKey(k.en)">
         <span class="zh">{{k.zh}}</span>
         <span class="en">{{k.en}}</span>
       </div>
     </div>
+  </div>
+
+  <!-- Pause overlay -->
+  <div id="pause-overlay" v-if="isPaused">
+    <h2>⏸ PAUSED</h2>
+    <p>按 ESC 或 P 繼續遊戲</p>
+    <button class="btn" @click="togglePause">繼續 ▶</button>
   </div>
 
   <!-- Overlays -->
@@ -245,6 +297,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     <div v-if="isNewBest" class="new-best-badge">🎉 新紀錄！</div>
     <div id="final-score">得分：{{score}} 分</div>
     <p>擊殺怪物：{{score}} 隻<br>最高關卡：Lv.{{level}}<br>
+      🎯 正確率：{{accuracy}}%　⚡ 最高連擊：{{maxComboReached}}<br>
       <span style="color:#ffd700">🏆 最高紀錄：{{bestScore}} 分</span></p>
     <div style="display:flex;gap:12px;margin-top:14px">
       <button class="btn btn-green" @click="startGame('practice')">🌱 練習模式</button>
@@ -254,7 +307,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
 </div>
 <script>
-const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+const { createApp, ref, computed, watch, onMounted, onUnmounted } = Vue;
 
 // ── Standard TW Zhuyin keyboard (physical keyboard row layout) ──
 const KB_ROWS = [
@@ -281,6 +334,9 @@ const KB_ROWS = [
 const KEY_TO_ZH = {};
 KB_ROWS.flat().forEach(k => { KEY_TO_ZH[k.en] = k.zh; });
 KEY_TO_ZH[' '] = 'SPC_ZH'; // internal marker for space
+// Reverse lookup: zhuyin char → en key (for hint highlighting)
+const ZH_TO_KEY = {};
+KB_ROWS.flat().forEach(k => { if(k.en !== 'SPC') ZH_TO_KEY[k.zh] = k.en; });
 
 // ── Tiered sentence pool ──
 // Tier 1 初學：2-3字、常見聲母、簡單韻母 (30 sentences)
@@ -499,6 +555,8 @@ createApp({
     const flatLen       = computed(() => flatSentence.value.length);
     const tierNum       = computed(()=> level.value<=3?1:level.value<=6?2:3);
     const tierLabel     = computed(()=>['','初學','中級','高級'][tierNum.value]);
+    const isBossLevel   = computed(()=> level.value>0 && level.value%5===0);
+    const accuracy      = computed(()=> totalPresses.value===0 ? 100 : Math.round(correctPresses.value/totalPresses.value*100));
     const timerPct      = ref(100);
     const kbRows        = ref(KB_ROWS);
     const comboMsg      = ref(null);
@@ -509,6 +567,12 @@ createApp({
     const combo         = ref(0);  // reactive for HUD display
     const bestScore     = ref(parseInt(localStorage.getItem(HS_KEY)||'0'));
     const isNewBest     = ref(false);
+    const wrongHintKey  = ref('');    // en key to highlight after wrong input
+    const isPaused      = ref(false); // pause state
+    const totalPresses  = ref(0);     // total key presses for accuracy
+    const correctPresses= ref(0);     // correct presses for accuracy
+    const maxComboReached = ref(0);   // peak combo this session
+    const levelupMsg    = ref(null);  // ref to #levelup-msg DOM element
 
     let pixiApp=null, monster=null;
     let monsterHP=0, monsterMaxHP=0;
@@ -518,6 +582,7 @@ createApp({
     let timeLeft=0, timeTotal=0;
     let usedIdx=new Set();
     let wrongTimer=null;      // debounce wrongIdx clear
+    let wrongHintTimer=null;  // debounce wrongHintKey clear
     let comboCount=0;         // internal combo counter
     const WRONG_PENALTY=2000;
     const CRIT_EVERY=5;       // crit on every Nth hit in combo
@@ -529,7 +594,7 @@ createApp({
 
     // ── Core input handler ──
     function handleInput(key) {
-      if(phase.value!=='playing') return;
+      if(phase.value!=='playing' || isPaused.value) return;
       const zh = key===' ' ? null : KEY_TO_ZH[key];
       if(!zh && key!==' ') return;
 
@@ -538,18 +603,23 @@ createApp({
       activeKeys.value = new Set([...activeKeys.value, dispKey]);
       setTimeout(()=>{ activeKeys.value=new Set([...activeKeys.value].filter(k=>k!==dispKey)); },150);
 
+      totalPresses.value++;
+
       const expected = flatSentence.value[cursor.value];
       const isCorrect = zh===expected;
 
       if(isCorrect) {
+        correctPresses.value++;
         // Clear any pending wrongIdx on this position
         if(wrongIdx.value===cursor.value){
           if(wrongTimer){ clearTimeout(wrongTimer); wrongTimer=null; }
-          wrongIdx.value=-1;
+          if(wrongHintTimer){ clearTimeout(wrongHintTimer); wrongHintTimer=null; }
+          wrongIdx.value=-1; wrongHintKey.value='';
         }
         // Combo + crit
         comboCount++;
         combo.value=comboCount;
+        if(comboCount>maxComboReached.value) maxComboReached.value=comboCount;
         const isCrit = comboCount>=CRIT_EVERY && comboCount%CRIT_EVERY===0;
         cursor.value++;
         damageMonster(isCrit);
@@ -565,18 +635,25 @@ createApp({
           setTimeout(()=>loadSentence(),500);
         }
       } else {
-        // Wrong: reset combo, set wrongIdx
+        // Wrong: reset combo, set wrongIdx + hint key
         comboCount=0; combo.value=0;
         if(wrongTimer) clearTimeout(wrongTimer);
+        if(wrongHintTimer) clearTimeout(wrongHintTimer);
         wrongIdx.value=cursor.value;
+        wrongHintKey.value = ZH_TO_KEY[flatSentence.value[cursor.value]] || '';
         wrongTimer=setTimeout(()=>{ wrongIdx.value=-1; wrongTimer=null; },350);
+        wrongHintTimer=setTimeout(()=>{ wrongHintKey.value=''; wrongHintTimer=null; },800);
         playSound('wrong');
         if(mode.value==='timeattack') applyTimePenalty();
       }
     }
 
     function onKeyDown(e){
-      if(phase.value!=='playing') return;
+      // ESC or P: toggle pause during gameplay
+      if(phase.value==='playing' && (e.key==='Escape' || e.key.toLowerCase()==='p')){
+        e.preventDefault(); togglePause(); return;
+      }
+      if(isPaused.value || phase.value!=='playing') return;
       if(e.repeat) return;                    // ignore key-repeat (long press)
       if(e.isComposing || e.keyCode===229) return;
       if(['Tab','Enter','Shift','Control','Alt','Meta','CapsLock'].includes(e.key)) return;
@@ -587,8 +664,32 @@ createApp({
       // keyup only used to prevent default, input handled on keydown
     }
     function pressKey(en){
-      if(phase.value!=='playing') return;
+      if(phase.value!=='playing' || isPaused.value) return;
       handleInput(en==='SPC'?' ':en);
+    }
+    function togglePause(){
+      if(phase.value!=='playing') return;
+      isPaused.value = !isPaused.value;
+      if(isPaused.value){
+        clearInterval(timerInterval);
+      } else {
+        if(mode.value==='timeattack' && timeLeft>0){
+          timerInterval=setInterval(()=>{
+            timeLeft-=100;
+            timerPct.value=Math.max(0,timeLeft/timeTotal*100);
+            if(timeLeft<=0){clearInterval(timerInterval);onTimerExpire();}
+          },100);
+        }
+        focusMobile();
+      }
+    }
+    function showLevelup(lv){
+      const el=levelupMsg.value; if(!el) return;
+      el.textContent=`⬆ Lv.${lv}！`;
+      el.classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'),1000);
     }
 
     // ── Pixi ──
@@ -704,6 +805,7 @@ createApp({
 
     function spawnMonster(){
       if(!pixiApp||!monsterTextures) return;
+      const isBoss = level.value>0 && level.value%5===0;
       pixiApp.stage.removeChildren();
       const W=pixiApp.renderer.width,H=pixiApp.renderer.height;
 
@@ -741,7 +843,8 @@ createApp({
       const hpBarSpace = 80; // px reserved for HP bar above monster
       const bottomPad = 30; // px padding at bottom
       const availableH = H - hpBarSpace - bottomPad;
-      const sc = Math.min(availableH / totalH, 1.5);
+      const baseSc = Math.min(availableH / totalH, 1.5);
+      const sc = isBoss ? Math.min(baseSc*1.5, 2.2) : baseSc;
       mc.scale.set(sc);
 
       // center monster vertically: offset so body center is above midpoint (legs hang below)
@@ -825,7 +928,7 @@ createApp({
       hpBg.beginFill(0x333333); hpBg.drawRoundedRect(-bw/2,-70,bw,16,4); hpBg.endFill();
       hpContainer.addChild(hpBg);
 
-      monsterMaxHP=5+level.value*2; monsterHP=monsterMaxHP;
+      monsterMaxHP=(5+level.value*2)*(isBoss?3:1); monsterHP=monsterMaxHP;
       hpBarFill=new PIXI.Graphics(); drawHPBar(); hpContainer.addChild(hpBarFill);
       hpText=new PIXI.Text(`${monsterHP}/${monsterMaxHP}`,{fontSize:14,fill:0xffffff,fontWeight:'bold'});
       hpText.anchor.set(0.5,0); hpText.x=0; hpText.y=-70; hpContainer.addChild(hpText);
@@ -925,6 +1028,8 @@ createApp({
     function loadSentence(){
       cursor.value=0; wrongIdx.value=-1;
       if(wrongTimer){clearTimeout(wrongTimer);wrongTimer=null;}
+      if(wrongHintTimer){clearTimeout(wrongHintTimer);wrongHintTimer=null;}
+      wrongHintKey.value='';
       const s=pickSentence();
       flatSentence.value=sentenceToFlat(s);
       currentWords.value=sentenceToWords(s);
@@ -984,6 +1089,8 @@ createApp({
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
       comboCount=0; combo.value=0;
       isNewBest.value=false;
+      totalPresses.value=0; correctPresses.value=0; maxComboReached.value=0;
+      isPaused.value=false;
       ensureAudio();
       clearInterval(timerInterval);
       phase.value='playing';
@@ -994,6 +1101,8 @@ createApp({
         loadSentence();
       } else{syncCanvasSize();spawnMonster();loadSentence();}
     }
+    watch(level,(newVal,oldVal)=>{ if(phase.value==='playing'&&newVal>oldVal) showLevelup(newVal); });
+
     onMounted(()=>{
       window.addEventListener('keydown',onKeyDown);
       window.addEventListener('keyup',onKeyUp);
@@ -1005,14 +1114,16 @@ createApp({
       window.removeEventListener('resize',resizePixi);
       clearInterval(timerInterval);
       if(wrongTimer) clearTimeout(wrongTimer);
+      if(wrongHintTimer) clearTimeout(wrongHintTimer);
       if(pixiApp) pixiApp.destroy();
     });
 
     return {
       phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,tierNum,tierLabel,
       currentWords,flatLen,timerPct,kbRows,bestScore,isNewBest,
-      comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,
-      startGame,pressKey,
+      wrongHintKey,isPaused,accuracy,maxComboReached,isBossLevel,
+      comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,levelupMsg,
+      startGame,pressKey,togglePause,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
   }
