@@ -29,15 +29,17 @@ Single-page app with all game logic in one file:
 `phase` ref drives state: `start` → `playing` → `gameover`. During `playing`:
 1. `loadSentence()` picks a sentence from `SENTENCES` pool (difficulty scales with `level`)
 2. Player types zhuyin symbols matching `flatSentence` array; `cursor` tracks position
-3. Correct input advances cursor and damages monster; wrong input triggers `wrongIdx` highlight + 2-second time penalty
+3. Correct input advances cursor and damages monster; wrong input triggers `wrongIdx` highlight + hint key glow + 2-second time penalty
 4. Timer expires → lose 1 HP; all HP gone → game over
-5. Every 3 sentences scored → level up; when monster HP reaches 0 → kill animation + respawn
+5. Every 3 sentences scored → level up (with animation); when monster HP reaches 0 → kill animation + respawn
+6. Every 5th level → Boss (HP ×3, size ×1.5). ESC/P toggles pause; `isPaused` blocks all input and suspends timer
 
 ### Key Data Structures
 
-- `SENTENCES[]` — word pool, each entry: `{ words: [{ h: '漢字', z: ['ㄓ','ㄨ','ˋ'] }] }`
+- `SENTENCE_TIERS{}` — tiered word pool (100 sentences): `{ 1: [...], 2: [...], 3: [...] }`. Each entry: `{ words: [{ h: '漢字', z: ['ㄓ','ㄨ','ˋ'] }] }`
 - `KB_ROWS[]` — virtual keyboard layout matching Taiwan standard zhuyin keyboard mapping
 - `KEY_TO_ZH{}` — maps physical key (e.g. `'5'`) → zhuyin symbol (e.g. `'ㄓ'`)
+- `ZH_TO_KEY{}` — reverse lookup: zhuyin symbol → physical key (used for hint highlighting)
 
 ### Input Handling
 

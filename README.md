@@ -35,7 +35,13 @@ Single-page app, all code in `src/index.html` (HTML + CSS + JS in one file).
 ## Game Mechanics
 
 - Type zhuyin symbols to damage monsters
-- Wrong input: -2 seconds time penalty
+- Wrong input: -2 seconds time penalty + target key hint glow (0.8s)
 - Timer expires: lose 1 HP (3 HP total)
-- Every 3 sentences: level up (harder sentences, stronger monsters)
+- Every 3 sentences: level up (harder sentences, stronger monsters) with level-up animation
+- Every 5th level: Boss battle (HP ×3, size ×1.5, gold glow)
+- Combo system: every 5 consecutive correct inputs = CRIT (×2 damage)
+- Pause anytime with ESC or P
+- High score saved in localStorage
+- End screen shows accuracy % and peak combo
 - Supports physical keyboard and on-screen virtual keyboard
+- Tiered sentence pool: 100 sentences across 3 difficulty tiers (初學/中級/高級)

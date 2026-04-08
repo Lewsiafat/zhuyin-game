@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] - 2026-04-08
+
+### Added
+- 句庫擴充：從 32 句增加至 100 句，分三階（初學 30 句、中級 40 句、高級 30 句）
+- localStorage 最高分紀錄，開始畫面顯示歷史最高分，結束畫面顯示新紀錄徽章
+- Web Audio API 合成音效引擎（一般擊中、爆擊、擊殺、答錯、遊戲結束共 5 種）
+- 答錯時正確目標鍵黃色脈衝高亮，0.8 秒後自動消退
+- ESC / P 鍵暫停功能，顯示 PAUSED overlay，限時模式計時同步暫停／恢復
+- 結束畫面新增正確率（%）與本局最高連擊數統計
+- Boss 關卡：每第 5 關（Lv.5, 10, 15…）怪物 HP x3、體型 x1.5、金橘色外框光暈 + 紅色 BOSS 標籤
+- 升級動畫：等級提升時在怪物區顯示「⬆ Lv.X！」浮現淡出動畫（1 秒）
+
+### Fixed
+- 修正 `kenney_background-elements` 為 Mac 本地路徑 symlink 導致 VPS 404 的問題，改為將素材直接納入 repo（CC0 授權）
+
 ## [0.2.0] - 2026-03-19
 
 ### Added
