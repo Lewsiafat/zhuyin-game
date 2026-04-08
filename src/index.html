@@ -184,6 +184,73 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   border:1px solid #f87171;letter-spacing:1px;
   text-shadow:0 0 8px rgba(248,113,113,0.8);
 }
+
+/* ── BGM mute button ── */
+#bgm-btn{
+  font-size:16px;cursor:pointer;background:none;border:none;
+  padding:2px 4px;border-radius:6px;line-height:1;
+  opacity:0.7;transition:opacity 0.15s;
+}
+#bgm-btn:hover{opacity:1}
+
+/* ── Achievement toast ── */
+#ach-toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#1e1e3a,#2d2d5a);
+  border:1px solid #ffd700;border-radius:14px;
+  padding:10px 20px;display:flex;align-items:center;gap:10px;
+  z-index:300;box-shadow:0 4px 24px rgba(0,0,0,0.6);
+  animation:achslide 0.4s ease-out;
+}
+#ach-toast .ach-icon{font-size:24px;line-height:1}
+#ach-toast .ach-text{display:flex;flex-direction:column}
+#ach-toast .ach-label{font-size:10px;color:#fbbf24;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+#ach-toast .ach-name{font-size:clamp(13px,3.5vw,15px);color:#fff;font-weight:900}
+#ach-toast .ach-desc{font-size:clamp(10px,2.5vw,11px);color:#94a3b8}
+@keyframes achslide{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+/* ── Tutorial panel ── */
+#tutorial-panel{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  background:linear-gradient(180deg,#1a1a2e 0%,#0d0d1a 100%);
+}
+#tutorial-panel .tut-progress{font-size:11px;color:#64748b;letter-spacing:2px;text-transform:uppercase}
+#tutorial-panel .tut-symbol{
+  font-size:clamp(48px,12vw,72px);font-weight:900;color:#a78bfa;
+  text-shadow:0 0 30px #7c3aed;line-height:1;
+}
+#tutorial-panel .tut-key-hint{
+  font-size:clamp(13px,3.5vw,16px);color:#e0e7ff;
+  background:#1e1e3a;padding:4px 16px;border-radius:8px;border:1px solid #4f46e5;
+}
+#tutorial-panel .tut-instruction{font-size:clamp(11px,3vw,13px);color:#64748b;margin-top:4px}
+#tutorial-panel .tut-wrong{font-size:clamp(12px,3vw,14px);color:#f87171;animation:shake 0.3s;margin-top:4px}
+#tut-done-msg{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;
+  background:rgba(0,0,0,0.85);z-index:10;
+}
+#tut-done-msg h2{font-size:clamp(22px,6vw,30px);color:#a78bfa;text-shadow:0 0 20px #7c3aed}
+#tut-done-msg p{font-size:clamp(12px,3vw,14px);color:#94a3b8;text-align:center;max-width:260px}
+
+/* ── Daily challenge & achievements button area ── */
+.mode-card.daily{border-color:#0f4c41}
+.mode-card.daily:hover{border-color:#34d399;background:#022c22}
+.mode-card.daily h2{color:#34d399}
+.mode-card.daily.done{opacity:0.6;cursor:not-allowed}
+.daily-score-chip{
+  display:inline-block;background:#022c22;border:1px solid #34d399;
+  color:#34d399;padding:2px 10px;border-radius:12px;font-size:11px;margin-top:6px;
+}
+.ach-bar{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:#64748b;margin-top:6px;
+}
+.ach-bar-fill{
+  height:4px;background:#1e1e3a;border-radius:2px;flex:1;overflow:hidden;
+}
+.ach-bar-fill span{display:block;height:100%;background:#fbbf24;border-radius:2px;transition:width 0.4s}
 </style>
 </head>
 <body>
@@ -203,6 +270,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div class="hp"><span v-for="i in 3" :key="i">{{hp>=i?'❤️':'🖤'}}</span></div>
       <div class="score">⭐ {{score}}</div>
       <div class="level">Lv.{{level}}</div>
+      <button id="bgm-btn" @click="toggleBGM" title="背景音樂">{{isBgmMuted?'🔇':'🔊'}}</button>
       <div v-if="phase==='playing'" :class="['mode-badge', mode]">
         {{mode==='practice'?'練習':'限時'}}
       </div>
@@ -211,6 +279,20 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
            :style="{background:combo>=10?'#7c2d12':combo>=5?'#92400e':'#1e1b4b',
                     color:combo>=10?'#fca5a5':combo>=5?'#fcd34d':'#a5b4fc'}">
         🔥 {{combo}} 連擊{{combo>=5?'　⚡CRIT':''}}
+      </div>
+    </div>
+    <!-- Tutorial panel (replaces canvas in tutorial phase) -->
+    <div v-if="phase==='tutorial'" id="tutorial-panel">
+      <div v-if="!tutDone">
+        <div class="tut-progress">步驟 {{tutStep+1}} / {{TUTORIAL_STEPS.length}}</div>
+        <div class="tut-symbol">{{tutCurrentStep.zh}}</div>
+        <div class="tut-key-hint">{{tutCurrentStep.hint}}</div>
+        <div class="tut-instruction">在鍵盤上找到高亮的按鍵並按下</div>
+        <div v-if="tutWrong" class="tut-wrong">❌ 按錯了，再試試！</div>
+      </div>
+      <div id="tut-done-msg" v-else>
+        <h2>🎓 教學完成！</h2>
+        <p>你已認識注音鍵盤的基本按鍵<br>解鎖成就「注音入門」📖</p>
       </div>
     </div>
     <div id="combo-msg" ref="comboMsg"></div>
@@ -249,7 +331,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   <div id="keyboard-area">
     <div v-for="(row,ri) in kbRows" :key="ri" class="kb-row">
       <div v-for="k in row" :key="k.en"
-           :class="['kkey',{active:activeKeys.has(k.en),tone:k.tone,spc:k.en==='SPC',hint:wrongHintKey===k.en}]"
+           :class="['kkey',{active:activeKeys.has(k.en),tone:k.tone,spc:k.en==='SPC',hint:wrongHintKey===k.en||tutTargetKey===k.en}]"
            @mousedown.prevent="pressKey(k.en)"
            @touchstart.prevent="pressKey(k.en)">
         <span class="zh">{{k.zh}}</span>
@@ -288,12 +370,27 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
         <h2>⚡ 限時模式</h2>
         <p>依字句長度動態計時，打錯扣 2 秒<br>時間到扣 HP ❤️ — 越長的句子時間越多<br>Lv1初學 → Lv4中級 → Lv7高級</p>
       </div>
+      <div :class="['mode-card','daily',{done:dailyDoneToday}]" @click="startDaily">
+        <h2>📅 每日挑戰</h2>
+        <p>今日固定 5 句，每天限挑戰一次</p>
+        <span v-if="dailyDoneToday" class="daily-score-chip">✅ 今日已完成 {{dailyBest}} 分</span>
+        <span v-else class="daily-score-chip">⏳ 今日尚未挑戰</span>
+      </div>
+      <div class="mode-card" style="border-color:#312e81" @click="startTutorial">
+        <h2 style="color:#818cf8">📖 教學關卡</h2>
+        <p>學習注音鍵盤按鍵位置，適合新手<br>
+          <span class="ach-bar">
+            成就 <span class="ach-bar-fill"><span :style="{width:(achUnlockedCount/ACHIEVEMENTS.length*100)+'%'}"></span></span>
+            {{achUnlockedCount}}/{{ACHIEVEMENTS.length}}
+          </span>
+        </p>
+      </div>
     </div>
   </div>
 
   <!-- Game over -->
   <div id="overlay" v-if="phase==='gameover'">
-    <div id="gameover-title">💀 遊戲結束</div>
+    <div id="gameover-title">{{mode==='daily'?'📅 今日挑戰完成！':'💀 遊戲結束'}}</div>
     <div v-if="isNewBest" class="new-best-badge">🎉 新紀錄！</div>
     <div id="final-score">得分：{{score}} 分</div>
     <p>擊殺怪物：{{score}} 隻<br>最高關卡：Lv.{{level}}<br>
@@ -302,6 +399,16 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     <div style="display:flex;gap:12px;margin-top:14px">
       <button class="btn btn-green" @click="startGame('practice')">🌱 練習模式</button>
       <button class="btn" @click="startGame('timeattack')">⚡ 再挑戰</button>
+    </div>
+  </div>
+
+  <!-- Achievement toast -->
+  <div id="ach-toast" v-if="achToast">
+    <div class="ach-icon">{{achToast.icon}}</div>
+    <div class="ach-text">
+      <span class="ach-label">成就解鎖</span>
+      <span class="ach-name">{{achToast.name}}</span>
+      <span class="ach-desc">{{achToast.desc}}</span>
     </div>
   </div>
 
@@ -540,6 +647,87 @@ function calcTimeMs(flatLen) {
   return Math.min(60000, Math.max(8000, flatLen * 3000));
 }
 
+// ── Seeded PRNG (LCG) for daily challenge ──
+function seededRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = Math.imul(s, 1664525) + 1013904223 >>> 0; return s / 0x100000000; };
+}
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function getDailySentences() {
+  const seed = parseInt(getTodayKey());
+  const rng = seededRng(seed);
+  const pool = [...SENTENCE_TIERS[1], ...SENTENCE_TIERS[2], ...SENTENCE_TIERS[3]];
+  const selected = [], used = new Set();
+  while (selected.length < 5) {
+    const idx = Math.floor(rng() * pool.length);
+    if (!used.has(idx)) { used.add(idx); selected.push(pool[idx]); }
+  }
+  return selected;
+}
+const DAILY_KEY  = 'zhuyin_daily';
+const ACH_KEY    = 'zhuyin_achievements';
+
+// ── Achievements config ──
+const ACHIEVEMENTS = [
+  { id:'first_kill',  icon:'⚔️',  name:'首戰告捷',   desc:'擊殺第一隻怪物' },
+  { id:'combo10',     icon:'🔥',  name:'連擊大師',   desc:'達成 10 連擊' },
+  { id:'score50',     icon:'🌟',  name:'半百勇士',   desc:'得分突破 50 分' },
+  { id:'boss_kill',   icon:'👑',  name:'勇者',       desc:'在 Boss 關卡擊殺怪物' },
+  { id:'perfect',     icon:'✨',  name:'完美出擊',   desc:'正確率 100%（至少 20 鍵）' },
+  { id:'level10',     icon:'🏆',  name:'老練勇士',   desc:'到達 Lv.10' },
+  { id:'daily',       icon:'📅',  name:'每日習慣',   desc:'完成每日挑戰' },
+  { id:'tutorial',    icon:'📖',  name:'注音入門',   desc:'完成教學關卡' },
+];
+
+// ── Tutorial steps ──
+const TUTORIAL_STEPS = [
+  { key:'1', zh:'ㄅ', hint:'聲母 ㄅ → 數字鍵 1' },
+  { key:'q', zh:'ㄆ', hint:'聲母 ㄆ → Q 鍵' },
+  { key:'a', zh:'ㄇ', hint:'聲母 ㄇ → A 鍵' },
+  { key:'2', zh:'ㄉ', hint:'聲母 ㄉ → 數字鍵 2' },
+  { key:'u', zh:'ㄧ', hint:'韻母 ㄧ → U 鍵' },
+  { key:'j', zh:'ㄨ', hint:'韻母 ㄨ → J 鍵' },
+  { key:'8', zh:'ㄚ', hint:'韻母 ㄚ → 數字鍵 8' },
+  { key:'9', zh:'ㄞ', hint:'韻母 ㄞ → 數字鍵 9' },
+  { key:'3', zh:'ˇ', hint:'三聲（ˇ）→ 數字鍵 3' },
+  { key:'4', zh:'ˋ', hint:'四聲（ˋ）→ 數字鍵 4' },
+];
+
+// ── BGM engine ──
+const BGM_NOTES = [523,659,784,659,523,587,784,587,523,659,784,880,784,659,523,392];
+const BGM_DURS  = [0.3,0.3,0.3,0.3,0.6,0.3,0.3,0.6,0.3,0.3,0.3,0.3,0.3,0.3,0.6,0.6];
+let bgmMuted = true; // default muted
+let bgmTimer = null;
+let bgmIdx   = 0;
+let bgmGain  = null;
+function startBGM() {
+  if (bgmMuted || !audioCtx) return;
+  if (bgmTimer) return;
+  scheduleBGMNote();
+}
+function scheduleBGMNote() {
+  if (bgmMuted || !audioCtx) return;
+  const freq = BGM_NOTES[bgmIdx % BGM_NOTES.length];
+  const dur  = BGM_DURS[bgmIdx % BGM_DURS.length];
+  const now  = audioCtx.currentTime;
+  if (!bgmGain) { bgmGain = audioCtx.createGain(); bgmGain.connect(audioCtx.destination); }
+  const osc = audioCtx.createOscillator();
+  osc.connect(bgmGain);
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  bgmGain.gain.setValueAtTime(0.055, now);
+  bgmGain.gain.setValueAtTime(0.001, now + dur * 0.85);
+  osc.start(now); osc.stop(now + dur);
+  bgmIdx++;
+  bgmTimer = setTimeout(scheduleBGMNote, dur * 1000);
+}
+function stopBGM() {
+  if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; }
+}
+
 createApp({
   setup() {
     const phase         = ref('start');
@@ -573,6 +761,24 @@ createApp({
     const correctPresses= ref(0);     // correct presses for accuracy
     const maxComboReached = ref(0);   // peak combo this session
     const levelupMsg    = ref(null);  // ref to #levelup-msg DOM element
+    // ── P2: BGM ──
+    const isBgmMuted    = ref(true);
+    // ── P2: Achievements ──
+    const unlockedAchs  = ref(new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]')));
+    const achToast      = ref(null);  // currently shown achievement {icon,name,desc}
+    // ── P2: Daily challenge ──
+    const dailyBest     = ref(0);
+    const dailyDoneToday= ref(false);
+    const dailySentences= ref([]);
+    const dailyIdx      = ref(0);
+    const dailyTodayKey = ref(getTodayKey());
+    // ── P2: Tutorial ──
+    const tutStep       = ref(0);    // 0-based index into TUTORIAL_STEPS
+    const tutWrong      = ref(false);// flash wrong indicator
+    const tutDone       = ref(false);// show completion message
+    const tutTargetKey  = computed(()=> phase.value==='tutorial' && tutStep.value<TUTORIAL_STEPS.length
+      ? TUTORIAL_STEPS[tutStep.value].key : '');
+    const tutCurrentStep= computed(()=> TUTORIAL_STEPS[tutStep.value] || TUTORIAL_STEPS[0]);
 
     let pixiApp=null, monster=null;
     let monsterHP=0, monsterMaxHP=0;
@@ -583,9 +789,84 @@ createApp({
     let usedIdx=new Set();
     let wrongTimer=null;      // debounce wrongIdx clear
     let wrongHintTimer=null;  // debounce wrongHintKey clear
+    let achToastTimer=null;   // auto-dismiss achievement toast
+    let tutWrongTimer=null;   // clear tutWrong flag
     let comboCount=0;         // internal combo counter
     const WRONG_PENALTY=2000;
     const CRIT_EVERY=5;       // crit on every Nth hit in combo
+
+    // ── Init daily / achievement state ──
+    (()=>{
+      const data = JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
+      if (data && data.date === dailyTodayKey.value) {
+        dailyDoneToday.value = true;
+        dailyBest.value = data.score;
+      }
+    })();
+
+    // ── BGM controls ──
+    function toggleBGM() {
+      bgmMuted = !bgmMuted;
+      isBgmMuted.value = bgmMuted;
+      if (bgmMuted) { stopBGM(); }
+      else { ensureAudio(); startBGM(); }
+    }
+
+    // ── Achievement system ──
+    function unlockAch(id) {
+      if (unlockedAchs.value.has(id)) return;
+      unlockedAchs.value = new Set([...unlockedAchs.value, id]);
+      localStorage.setItem(ACH_KEY, JSON.stringify([...unlockedAchs.value]));
+      const ach = ACHIEVEMENTS.find(a=>a.id===id);
+      if (!ach) return;
+      achToast.value = ach;
+      if (achToastTimer) clearTimeout(achToastTimer);
+      achToastTimer = setTimeout(()=>{ achToast.value=null; achToastTimer=null; }, 3200);
+    }
+    const achUnlockedCount = computed(()=> unlockedAchs.value.size);
+
+    // ── Tutorial ──
+    function startTutorial() {
+      tutStep.value = 0; tutWrong.value = false; tutDone.value = false;
+      phase.value = 'tutorial';
+    }
+    function handleTutInput(key) {
+      if (phase.value !== 'tutorial' || tutDone.value) return;
+      const step = TUTORIAL_STEPS[tutStep.value];
+      if (!step) return;
+      if (key === step.key) {
+        playSound('hit');
+        tutStep.value++;
+        if (tutStep.value >= TUTORIAL_STEPS.length) {
+          tutDone.value = true;
+          playSound('kill');
+          unlockAch('tutorial');
+          setTimeout(()=>{ phase.value='start'; tutDone.value=false; }, 2200);
+        }
+      } else {
+        playSound('wrong');
+        tutWrong.value = true;
+        if (tutWrongTimer) clearTimeout(tutWrongTimer);
+        tutWrongTimer = setTimeout(()=>{ tutWrong.value=false; tutWrongTimer=null; }, 600);
+      }
+    }
+
+    // ── Daily challenge ──
+    function startDaily() {
+      if (dailyDoneToday.value) return;
+      dailySentences.value = getDailySentences();
+      dailyIdx.value = 0;
+      startGame('timeattack', true);
+    }
+    function saveDailyResult() {
+      const s = score.value;
+      if (!dailyDoneToday.value || s > dailyBest.value) {
+        dailyBest.value = s;
+        localStorage.setItem(DAILY_KEY, JSON.stringify({ date: dailyTodayKey.value, score: s }));
+        dailyDoneToday.value = true;
+        unlockAch('daily');
+      }
+    }
 
     // ── Focus ──
     function focusMobile(){ if(mobileInput.value) mobileInput.value.focus(); }
@@ -620,6 +901,7 @@ createApp({
         comboCount++;
         combo.value=comboCount;
         if(comboCount>maxComboReached.value) maxComboReached.value=comboCount;
+        if(comboCount>=10) unlockAch('combo10');
         const isCrit = comboCount>=CRIT_EVERY && comboCount%CRIT_EVERY===0;
         cursor.value++;
         damageMonster(isCrit);
@@ -629,7 +911,18 @@ createApp({
         if(cursor.value>=flatSentence.value.length){
           clearInterval(timerInterval);
           score.value++;
-          if(score.value%3===0) level.value++;
+          if(score.value>=50) unlockAch('score50');
+          // Daily mode: advance through fixed sentence queue
+          if(mode.value==='daily'){
+            dailyIdx.value++;
+            if(dailyIdx.value>=dailySentences.value.length){
+              if(monsterHP<=0) killMonster();
+              setTimeout(()=>{ saveDailyResult(); doGameOver(); },500);
+              return;
+            }
+          } else {
+            if(score.value%3===0) level.value++;
+          }
           showPraise();
           if(monsterHP<=0) killMonster();
           setTimeout(()=>loadSentence(),500);
@@ -649,6 +942,14 @@ createApp({
     }
 
     function onKeyDown(e){
+      // Tutorial mode
+      if(phase.value==='tutorial'){
+        if(e.repeat) return;
+        if(e.isComposing||e.keyCode===229) return;
+        e.preventDefault();
+        handleTutInput(e.key.toLowerCase());
+        return;
+      }
       // ESC or P: toggle pause during gameplay
       if(phase.value==='playing' && (e.key==='Escape' || e.key.toLowerCase()==='p')){
         e.preventDefault(); togglePause(); return;
@@ -664,6 +965,7 @@ createApp({
       // keyup only used to prevent default, input handled on keydown
     }
     function pressKey(en){
+      if(phase.value==='tutorial'){ handleTutInput(en==='SPC'?' ':en.toLowerCase()); return; }
       if(phase.value!=='playing' || isPaused.value) return;
       handleInput(en==='SPC'?' ':en);
     }
@@ -998,6 +1300,9 @@ createApp({
     function killMonster(){
       if(!monster) return;
       playSound('kill');
+      // Achievement checks
+      unlockAch('first_kill');
+      if(isBossLevel.value) unlockAch('boss_kill');
       const dying=monster; monster=null;
       if(bounceTicker){pixiApp.ticker.remove(bounceTicker);bounceTicker=null;}
       let sc=1;
@@ -1030,10 +1335,12 @@ createApp({
       if(wrongTimer){clearTimeout(wrongTimer);wrongTimer=null;}
       if(wrongHintTimer){clearTimeout(wrongHintTimer);wrongHintTimer=null;}
       wrongHintKey.value='';
-      const s=pickSentence();
+      const s = mode.value==='daily'
+        ? dailySentences.value[dailyIdx.value]
+        : pickSentence();
       flatSentence.value=sentenceToFlat(s);
       currentWords.value=sentenceToWords(s);
-      if(mode.value==='timeattack') startTimer();
+      if(mode.value==='timeattack'||mode.value==='daily') startTimer();
       else { clearInterval(timerInterval); timerPct.value=100; }
       focusMobile();
     }
@@ -1056,6 +1363,10 @@ createApp({
         localStorage.setItem(HS_KEY, String(score.value));
         isNewBest.value = true;
       }
+      // Achievement checks
+      if(accuracy.value===100 && totalPresses.value>=20) unlockAch('perfect');
+      if(level.value>=10) unlockAch('level10');
+      stopBGM();
       playSound('gameover');
       clearInterval(timerInterval);
       phase.value='gameover';
@@ -1084,14 +1395,16 @@ createApp({
     }
 
     // ── Game control ──
-    async function startGame(m){
-      mode.value=m||'timeattack';
+    async function startGame(m, isDaily=false){
+      mode.value = isDaily ? 'daily' : (m||'timeattack');
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
       comboCount=0; combo.value=0;
       isNewBest.value=false;
       totalPresses.value=0; correctPresses.value=0; maxComboReached.value=0;
       isPaused.value=false;
+      if(isDaily) dailyIdx.value=0;
       ensureAudio();
+      if(!isBgmMuted.value){ stopBGM(); bgmIdx=0; startBGM(); }
       clearInterval(timerInterval);
       phase.value='playing';
       // wait for Vue to update DOM + CSS layout to settle
@@ -1115,6 +1428,9 @@ createApp({
       clearInterval(timerInterval);
       if(wrongTimer) clearTimeout(wrongTimer);
       if(wrongHintTimer) clearTimeout(wrongHintTimer);
+      if(achToastTimer) clearTimeout(achToastTimer);
+      if(tutWrongTimer) clearTimeout(tutWrongTimer);
+      stopBGM();
       if(pixiApp) pixiApp.destroy();
     });
 
@@ -1122,8 +1438,13 @@ createApp({
       phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,tierNum,tierLabel,
       currentWords,flatLen,timerPct,kbRows,bestScore,isNewBest,
       wrongHintKey,isPaused,accuracy,maxComboReached,isBossLevel,
+      // P2
+      isBgmMuted,achToast,achUnlockedCount,ACHIEVEMENTS,unlockedAchs,
+      dailyBest,dailyDoneToday,
+      tutStep,tutWrong,tutDone,tutTargetKey,tutCurrentStep,TUTORIAL_STEPS,
       comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,levelupMsg,
       startGame,pressKey,togglePause,
+      toggleBGM,startTutorial,startDaily,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
     };
   }
