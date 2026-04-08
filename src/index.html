@@ -129,6 +129,18 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
 
 #gameover-title{color:#f87171;font-size:clamp(28px,7vw,38px);margin-bottom:6px}
 #final-score{color:#ffd700;font-size:clamp(20px,5vw,26px);margin-bottom:8px}
+.best-score-chip{
+  background:#1c1c3a;border:1px solid #ffd700;color:#fbbf24;
+  padding:5px 16px;border-radius:20px;font-size:clamp(12px,3vw,14px);
+  margin-bottom:16px;
+}
+.best-score-chip strong{color:#ffd700}
+.new-best-badge{
+  font-size:clamp(18px,5vw,24px);font-weight:900;color:#ffd700;
+  text-shadow:0 0 16px #ff9500;margin-bottom:6px;
+  animation:newbest 0.5s ease-out 3;
+}
+@keyframes newbest{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 </style>
 </head>
 <body>
@@ -208,6 +220,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
     <p>打出注音符號擊敗怪物！<br>每打對一字造成傷害 🗡️<br><br>
       💡 <b>手機</b>：點擊虛擬鍵盤<br>
       💻 <b>電腦</b>：直接打注音鍵盤</p>
+    <div v-if="bestScore>0" class="best-score-chip">🏆 最高紀錄：<strong>{{bestScore}} 分</strong></div>
     <button class="btn" @click="phase='select'">選擇模式 ▶</button>
   </div>
 
@@ -229,8 +242,10 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   <!-- Game over -->
   <div id="overlay" v-if="phase==='gameover'">
     <div id="gameover-title">💀 遊戲結束</div>
+    <div v-if="isNewBest" class="new-best-badge">🎉 新紀錄！</div>
     <div id="final-score">得分：{{score}} 分</div>
-    <p>擊殺怪物：{{score}} 隻<br>最高關卡：Lv.{{level}}</p>
+    <p>擊殺怪物：{{score}} 隻<br>最高關卡：Lv.{{level}}<br>
+      <span style="color:#ffd700">🏆 最高紀錄：{{bestScore}} 分</span></p>
     <div style="display:flex;gap:12px;margin-top:14px">
       <button class="btn btn-green" @click="startGame('practice')">🌱 練習模式</button>
       <button class="btn" @click="startGame('timeattack')">⚡ 再挑戰</button>
@@ -268,9 +283,9 @@ KB_ROWS.flat().forEach(k => { KEY_TO_ZH[k.en] = k.zh; });
 KEY_TO_ZH[' '] = 'SPC_ZH'; // internal marker for space
 
 // ── Tiered sentence pool ──
-// Tier 1 初學：2-3字、常見聲母、簡單韻母
-// Tier 2 中級：3-5字、複合韻母、混合聲調
-// Tier 3 高級：5字以上、捲舌音、複雜韻母、四聲混用
+// Tier 1 初學：2-3字、常見聲母、簡單韻母 (30 sentences)
+// Tier 2 中級：3-5字、複合韻母、混合聲調 (40 sentences)
+// Tier 3 高級：5字以上、捲舌音、複雜韻母、四聲混用 (30 sentences)
 const SENTENCE_TIERS = {
   1: [
     { words:[{h:'你',z:['ㄋ','ㄧ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
@@ -285,6 +300,24 @@ const SENTENCE_TIERS = {
     { words:[{h:'老',z:['ㄌ','ㄠ','ˇ']},{h:'師',z:['ㄕ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
     { words:[{h:'下',z:['ㄒ','ㄧ','ㄚ','ˋ']},{h:'課',z:['ㄎ','ㄜ','ˋ']},{h:'了',z:['ㄌ','ㄜ']}] },
     { words:[{h:'弟',z:['ㄉ','ㄧ','ˋ']},{h:'弟',z:['ㄉ','ㄧ']}] },
+    { words:[{h:'哥',z:['ㄍ','ㄜ']},{h:'哥',z:['ㄍ','ㄜ']}] },
+    { words:[{h:'姐',z:['ㄐ','ㄧ','ㄝ','ˇ']},{h:'姐',z:['ㄐ','ㄧ','ㄝ']}] },
+    { words:[{h:'妹',z:['ㄇ','ㄟ','ˋ']},{h:'妹',z:['ㄇ','ㄟ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'飯',z:['ㄈ','ㄢ','ˋ']}] },
+    { words:[{h:'再',z:['ㄗ','ㄞ','ˋ']},{h:'見',z:['ㄐ','ㄧ','ㄢ','ˋ']}] },
+    { words:[{h:'小',z:['ㄒ','ㄧ','ㄠ','ˇ']},{h:'貓',z:['ㄇ','ㄠ']}] },
+    { words:[{h:'小',z:['ㄒ','ㄧ','ㄠ','ˇ']},{h:'鳥',z:['ㄋ','ㄧ','ㄠ','ˇ']}] },
+    { words:[{h:'大',z:['ㄉ','ㄚ','ˋ']},{h:'狗',z:['ㄍ','ㄡ','ˇ']}] },
+    { words:[{h:'下',z:['ㄒ','ㄧ','ㄚ','ˋ']},{h:'雨',z:['ㄩ','ˇ']}] },
+    { words:[{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'加',z:['ㄐ','ㄧ','ㄚ']},{h:'油',z:['ㄧ','ㄡ','ˊ']}] },
+    { words:[{h:'快',z:['ㄎ','ㄨ','ㄞ','ˋ']},{h:'樂',z:['ㄌ','ㄜ','ˋ']}] },
+    { words:[{h:'來',z:['ㄌ','ㄞ','ˊ']},{h:'了',z:['ㄌ','ㄜ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'玩',z:['ㄨ','ㄢ','ˊ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'飽',z:['ㄅ','ㄠ','ˇ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'累',z:['ㄌ','ㄟ','ˋ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'魚',z:['ㄩ','ˊ']}] },
+    { words:[{h:'太',z:['ㄊ','ㄞ','ˋ']},{h:'棒',z:['ㄅ','ㄤ','ˋ']},{h:'了',z:['ㄌ','ㄜ']}] },
   ],
   2: [
     { words:[{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']}] },
@@ -299,6 +332,34 @@ const SENTENCE_TIERS = {
     { words:[{h:'今',z:['ㄐ','ㄧ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'上',z:['ㄕ','ㄤ','ˋ']},{h:'課',z:['ㄎ','ㄜ','ˋ']}] },
     { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'是',z:['ㄕ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'生',z:['ㄕ','ㄥ']}] },
     { words:[{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'校',z:['ㄒ','ㄧ','ㄠ','ˋ']},{h:'不',z:['ㄅ','ㄨ','ˋ']},{h:'遠',z:['ㄩ','ㄢ','ˇ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'晚',z:['ㄨ','ㄢ','ˇ']},{h:'飯',z:['ㄈ','ㄢ','ˋ']}] },
+    { words:[{h:'看',z:['ㄎ','ㄢ','ˋ']},{h:'電',z:['ㄉ','ㄧ','ㄢ','ˋ']},{h:'視',z:['ㄕ','ˋ']}] },
+    { words:[{h:'打',z:['ㄉ','ㄚ','ˇ']},{h:'籃',z:['ㄌ','ㄢ','ˊ']},{h:'球',z:['ㄑ','ㄧ','ㄡ','ˊ']}] },
+    { words:[{h:'讀',z:['ㄉ','ㄨ','ˊ']},{h:'故',z:['ㄍ','ㄨ','ˋ']},{h:'事',z:['ㄕ','ˋ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'朋',z:['ㄆ','ㄥ','ˊ']},{h:'友',z:['ㄧ','ㄡ','ˇ']}] },
+    { words:[{h:'下',z:['ㄒ','ㄧ','ㄚ','ˋ']},{h:'大',z:['ㄉ','ㄚ','ˋ']},{h:'雨',z:['ㄩ','ˇ']}] },
+    { words:[{h:'喝',z:['ㄏ','ㄜ']},{h:'豆',z:['ㄉ','ㄡ','ˋ']},{h:'漿',z:['ㄐ','ㄧ','ㄤ']}] },
+    { words:[{h:'去',z:['ㄑ','ㄩ','ˋ']},{h:'公',z:['ㄍ','ㄨ','ㄥ']},{h:'園',z:['ㄩ','ㄢ','ˊ']}] },
+    { words:[{h:'坐',z:['ㄗ','ㄨ','ㄛ','ˋ']},{h:'公',z:['ㄍ','ㄨ','ㄥ']},{h:'車',z:['ㄔ','ㄜ']}] },
+    { words:[{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'開',z:['ㄎ','ㄞ']},{h:'心',z:['ㄒ','ㄧ','ㄣ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'快',z:['ㄎ','ㄨ','ㄞ','ˋ']},{h:'樂',z:['ㄌ','ㄜ','ˋ']}] },
+    { words:[{h:'看',z:['ㄎ','ㄢ','ˋ']},{h:'書',z:['ㄕ','ㄨ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'習',z:['ㄒ','ㄧ','ˊ']}] },
+    { words:[{h:'一',z:['ㄧ']},{h:'起',z:['ㄑ','ㄧ','ˇ']},{h:'唱',z:['ㄔ','ㄤ','ˋ']},{h:'歌',z:['ㄍ','ㄜ']}] },
+    { words:[{h:'寫',z:['ㄒ','ㄧ','ㄝ','ˇ']},{h:'作',z:['ㄗ','ㄨ','ㄛ','ˋ']},{h:'業',z:['ㄧ','ㄝ','ˋ']}] },
+    { words:[{h:'喜',z:['ㄒ','ㄧ','ˇ']},{h:'歡',z:['ㄏ','ㄨ','ㄢ']},{h:'畫',z:['ㄏ','ㄨ','ㄚ','ˋ']},{h:'畫',z:['ㄏ','ㄨ','ㄚ','ˋ']}] },
+    { words:[{h:'放',z:['ㄈ','ㄤ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'回',z:['ㄏ','ㄨ','ㄟ','ˊ']},{h:'家',z:['ㄐ','ㄧ','ㄚ']}] },
+    { words:[{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']},{h:'美',z:['ㄇ','ㄟ','ˇ']},{h:'食',z:['ㄕ','ˊ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'肚',z:['ㄉ','ㄨ','ˋ']},{h:'子',z:['ㄗ']},{h:'餓',z:['ㄜ','ˋ']}] },
+    { words:[{h:'有',z:['ㄧ','ㄡ','ˇ']},{h:'空',z:['ㄎ','ㄨ','ㄥ','ˋ']},{h:'來',z:['ㄌ','ㄞ','ˊ']},{h:'玩',z:['ㄨ','ㄢ','ˊ']}] },
+    { words:[{h:'歡',z:['ㄏ','ㄨ','ㄢ']},{h:'迎',z:['ㄧ','ㄥ','ˊ']},{h:'光',z:['ㄍ','ㄨ','ㄤ']},{h:'臨',z:['ㄌ','ㄧ','ㄣ','ˊ']}] },
+    { words:[{h:'媽',z:['ㄇ','ㄚ']},{h:'媽',z:['ㄇ','ㄚ']},{h:'做',z:['ㄗ','ㄨ','ㄛ','ˋ']},{h:'菜',z:['ㄘ','ㄞ','ˋ']}] },
+    { words:[{h:'騎',z:['ㄑ','ㄧ','ˊ']},{h:'腳',z:['ㄐ','ㄧ','ㄠ','ˇ']},{h:'踏',z:['ㄊ','ㄚ','ˋ']},{h:'車',z:['ㄔ','ㄜ']}] },
+    { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'要',z:['ㄧ','ㄠ','ˋ']},{h:'睡',z:['ㄕ','ㄨ','ㄟ','ˋ']},{h:'覺',z:['ㄐ','ㄧ','ㄠ','ˋ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'水',z:['ㄕ','ㄨ','ㄟ','ˇ']},{h:'果',z:['ㄍ','ㄨ','ㄛ','ˇ']}] },
+    { words:[{h:'打',z:['ㄉ','ㄚ','ˇ']},{h:'掃',z:['ㄙ','ㄠ','ˇ']},{h:'房',z:['ㄈ','ㄤ','ˊ']},{h:'間',z:['ㄐ','ㄧ','ㄢ']}] },
+    { words:[{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']},{h:'小',z:['ㄒ','ㄧ','ㄠ','ˇ']},{h:'吃',z:['ㄔ']}] },
+    { words:[{h:'洗',z:['ㄒ','ㄧ','ˇ']},{h:'手',z:['ㄕ','ㄡ','ˇ']},{h:'做',z:['ㄗ','ㄨ','ㄛ','ˋ']},{h:'飯',z:['ㄈ','ㄢ','ˋ']}] },
+    { words:[{h:'高',z:['ㄍ','ㄠ']},{h:'興',z:['ㄒ','ㄧ','ㄥ','ˋ']},{h:'萬',z:['ㄨ','ㄢ','ˋ']},{h:'分',z:['ㄈ','ㄣ']}] },
   ],
   3: [
     { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'喜',z:['ㄒ','ㄧ','ˇ']},{h:'歡',z:['ㄏ','ㄨ','ㄢ']},{h:'巧',z:['ㄑ','ㄧ','ㄠ','ˊ']},{h:'克',z:['ㄎ','ㄜ','ˋ']},{h:'力',z:['ㄌ','ㄧ','ˋ']}] },
@@ -309,6 +370,28 @@ const SENTENCE_TIERS = {
     { words:[{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'們',z:['ㄇ','ㄣ']},{h:'一',z:['ㄧ']},{h:'起',z:['ㄑ','ㄧ','ˇ']},{h:'去',z:['ㄑ','ㄩ','ˋ']},{h:'爬',z:['ㄆ','ㄚ','ˊ']},{h:'山',z:['ㄕ','ㄢ']}] },
     { words:[{h:'今',z:['ㄐ','ㄧ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'是',z:['ㄕ','ˋ']},{h:'個',z:['ㄍ','ㄜ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'日',z:['ㄖ','ˋ']},{h:'子',z:['ㄗ']}] },
     { words:[{h:'春',z:['ㄔ','ㄨ','ㄣ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'花',z:['ㄏ','ㄨ','ㄚ']},{h:'草',z:['ㄘ','ㄠ','ˇ']},{h:'都',z:['ㄉ','ㄡ']},{h:'開',z:['ㄎ','ㄞ']},{h:'了',z:['ㄌ','ㄜ']}] },
+    { words:[{h:'吃',z:['ㄔ']},{h:'早',z:['ㄗ','ㄠ','ˇ']},{h:'餐',z:['ㄘ','ㄢ']},{h:'很',z:['ㄏ','ㄣ','ˇ']},{h:'重',z:['ㄓ','ㄨ','ㄥ','ˋ']},{h:'要',z:['ㄧ','ㄠ','ˋ']}] },
+    { words:[{h:'多',z:['ㄉ','ㄨ','ㄛ']},{h:'吃',z:['ㄔ']},{h:'蔬',z:['ㄕ','ㄨ']},{h:'菜',z:['ㄘ','ㄞ','ˋ']},{h:'水',z:['ㄕ','ㄨ','ㄟ','ˇ']},{h:'果',z:['ㄍ','ㄨ','ㄛ','ˇ']}] },
+    { words:[{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'天',z:['ㄊ','ㄧ','ㄢ']},{h:'運',z:['ㄩ','ㄣ','ˋ']},{h:'動',z:['ㄉ','ㄨ','ㄥ','ˋ']},{h:'身',z:['ㄕ','ㄣ']},{h:'體',z:['ㄊ','ㄧ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'走',z:['ㄗ','ㄡ','ˇ']},{h:'路',z:['ㄌ','ㄨ','ˋ']},{h:'去',z:['ㄑ','ㄩ','ˋ']},{h:'學',z:['ㄒ','ㄩ','ㄝ','ˊ']},{h:'校',z:['ㄒ','ㄧ','ㄠ','ˋ']}] },
+    { words:[{h:'下',z:['ㄒ','ㄧ','ㄚ','ˋ']},{h:'課',z:['ㄎ','ㄜ','ˋ']},{h:'後',z:['ㄏ','ㄡ','ˋ']},{h:'踢',z:['ㄊ','ㄧ']},{h:'足',z:['ㄗ','ㄨ','ˊ']},{h:'球',z:['ㄑ','ㄧ','ㄡ','ˊ']}] },
+    { words:[{h:'圖',z:['ㄊ','ㄨ','ˊ']},{h:'書',z:['ㄕ','ㄨ']},{h:'館',z:['ㄍ','ㄨ','ㄢ','ˇ']},{h:'借',z:['ㄐ','ㄧ','ㄝ','ˋ']},{h:'書',z:['ㄕ','ㄨ']},{h:'看',z:['ㄎ','ㄢ','ˋ']}] },
+    { words:[{h:'音',z:['ㄧ','ㄣ']},{h:'樂',z:['ㄩ','ㄝ','ˋ']},{h:'讓',z:['ㄖ','ㄤ','ˋ']},{h:'人',z:['ㄖ','ㄣ','ˊ']},{h:'心',z:['ㄒ','ㄧ','ㄣ']},{h:'情',z:['ㄑ','ㄧ','ㄥ','ˊ']},{h:'好',z:['ㄏ','ㄠ','ˇ']}] },
+    { words:[{h:'爸',z:['ㄅ','ㄚ','ˋ']},{h:'爸',z:['ㄅ','ㄚ']},{h:'帶',z:['ㄉ','ㄞ','ˋ']},{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'去',z:['ㄑ','ㄩ','ˋ']},{h:'動',z:['ㄉ','ㄨ','ㄥ','ˋ']},{h:'物',z:['ㄨ','ˋ']},{h:'園',z:['ㄩ','ㄢ','ˊ']}] },
+    { words:[{h:'新',z:['ㄒ','ㄧ','ㄣ']},{h:'年',z:['ㄋ','ㄧ','ㄢ','ˊ']},{h:'快',z:['ㄎ','ㄨ','ㄞ','ˋ']},{h:'樂',z:['ㄌ','ㄜ','ˋ']},{h:'萬',z:['ㄨ','ㄢ','ˋ']},{h:'事',z:['ㄕ','ˋ']},{h:'如',z:['ㄖ','ㄨ','ˊ']},{h:'意',z:['ㄧ','ˋ']}] },
+    { words:[{h:'溫',z:['ㄨ','ㄣ']},{h:'故',z:['ㄍ','ㄨ','ˋ']},{h:'而',z:['ㄦ','ˊ']},{h:'知',z:['ㄓ']},{h:'新',z:['ㄒ','ㄧ','ㄣ']}] },
+    { words:[{h:'三',z:['ㄙ','ㄢ']},{h:'人',z:['ㄖ','ㄣ','ˊ']},{h:'行',z:['ㄒ','ㄧ','ㄥ','ˊ']},{h:'必',z:['ㄅ','ㄧ','ˋ']},{h:'有',z:['ㄧ','ㄡ','ˇ']},{h:'我',z:['ㄨ','ㄛ','ˇ']},{h:'師',z:['ㄕ']}] },
+    { words:[{h:'書',z:['ㄕ','ㄨ']},{h:'中',z:['ㄓ','ㄨ','ㄥ']},{h:'自',z:['ㄗ','ˋ']},{h:'有',z:['ㄧ','ㄡ','ˇ']},{h:'黃',z:['ㄏ','ㄨ','ㄤ','ˊ']},{h:'金',z:['ㄐ','ㄧ','ㄣ']},{h:'屋',z:['ㄨ']}] },
+    { words:[{h:'一',z:['ㄧ']},{h:'寸',z:['ㄘ','ㄨ','ㄣ','ˋ']},{h:'光',z:['ㄍ','ㄨ','ㄤ']},{h:'陰',z:['ㄧ','ㄣ']},{h:'一',z:['ㄧ']},{h:'寸',z:['ㄘ','ㄨ','ㄣ','ˋ']},{h:'金',z:['ㄐ','ㄧ','ㄣ']}] },
+    { words:[{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'愛',z:['ㄞ','ˋ']},{h:'護',z:['ㄏ','ㄨ','ˋ']},{h:'環',z:['ㄏ','ㄨ','ㄢ','ˊ']},{h:'境',z:['ㄐ','ㄧ','ㄥ','ˋ']}] },
+    { words:[{h:'最',z:['ㄗ','ㄨ','ㄟ','ˋ']},{h:'美',z:['ㄇ','ㄟ','ˇ']},{h:'的',z:['ㄉ','ㄜ']},{h:'風',z:['ㄈ','ㄥ']},{h:'景',z:['ㄐ','ㄧ','ㄥ','ˇ']},{h:'在',z:['ㄗ','ㄞ','ˋ']},{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']}] },
+    { words:[{h:'彩',z:['ㄘ','ㄞ','ˇ']},{h:'虹',z:['ㄏ','ㄨ','ㄥ','ˊ']},{h:'在',z:['ㄗ','ㄞ','ˋ']},{h:'雨',z:['ㄩ','ˇ']},{h:'後',z:['ㄏ','ㄡ','ˋ']},{h:'出',z:['ㄔ','ㄨ']},{h:'現',z:['ㄒ','ㄧ','ㄢ','ˋ']},{h:'了',z:['ㄌ','ㄜ']}] },
+    { words:[{h:'請',z:['ㄑ','ㄧ','ㄥ','ˇ']},{h:'問',z:['ㄨ','ㄣ','ˋ']},{h:'廁',z:['ㄘ','ㄜ','ˋ']},{h:'所',z:['ㄙ','ㄨ','ㄛ','ˇ']},{h:'在',z:['ㄗ','ㄞ','ˋ']},{h:'哪',z:['ㄋ','ㄚ','ˇ']},{h:'裡',z:['ㄌ','ㄧ','ˇ']}] },
+    { words:[{h:'早',z:['ㄗ','ㄠ','ˇ']},{h:'起',z:['ㄑ','ㄧ','ˇ']},{h:'的',z:['ㄉ','ㄜ']},{h:'鳥',z:['ㄋ','ㄧ','ㄠ','ˇ']},{h:'兒',z:['ㄦ','ˊ']},{h:'有',z:['ㄧ','ㄡ','ˇ']},{h:'蟲',z:['ㄔ','ㄨ','ㄥ','ˊ']},{h:'吃',z:['ㄔ']}] },
+    { words:[{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'北',z:['ㄅ','ㄟ','ˇ']},{h:'是',z:['ㄕ','ˋ']},{h:'台',z:['ㄊ','ㄞ','ˊ']},{h:'灣',z:['ㄨ','ㄢ']},{h:'的',z:['ㄉ','ㄜ']},{h:'首',z:['ㄕ','ㄡ','ˇ']},{h:'都',z:['ㄉ','ㄨ']}] },
+    { words:[{h:'用',z:['ㄩ','ㄥ','ˋ']},{h:'心',z:['ㄒ','ㄧ','ㄣ']},{h:'做',z:['ㄗ','ㄨ','ㄛ','ˋ']},{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'一',z:['ㄧ']},{h:'件',z:['ㄐ','ㄧ','ㄢ','ˋ']},{h:'事',z:['ㄕ','ˋ']}] },
+    { words:[{h:'見',z:['ㄐ','ㄧ','ㄢ','ˋ']},{h:'義',z:['ㄧ','ˋ']},{h:'勇',z:['ㄩ','ㄥ','ˇ']},{h:'為',z:['ㄨ','ㄟ','ˊ']},{h:'不',z:['ㄅ','ㄨ','ˋ']},{h:'退',z:['ㄊ','ㄨ','ㄟ','ˋ']},{h:'縮',z:['ㄙ','ㄨ','ㄛ']}] },
+    { words:[{h:'認',z:['ㄖ','ㄣ','ˋ']},{h:'真',z:['ㄓ','ㄣ']},{h:'寫',z:['ㄒ','ㄧ','ㄝ','ˇ']},{h:'好',z:['ㄏ','ㄠ','ˇ']},{h:'每',z:['ㄇ','ㄟ','ˇ']},{h:'道',z:['ㄉ','ㄠ','ˋ']},{h:'題',z:['ㄊ','ㄧ','ˊ']}] },
   ],
 };
 
@@ -318,6 +401,62 @@ function sentenceToFlat(s) {
 function sentenceToWords(s) {
   let idx = 0;
   return s.words.map(w => { const r = {...w, startIdx: idx}; idx += w.z.length; return r; });
+}
+
+// ── High score (localStorage) ──
+const HS_KEY = 'zhuyin_best_score';
+
+// ── Web Audio sound engine ──
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playSound(type) {
+  try {
+    ensureAudio();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    if (type === 'hit') {
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc.start(now); osc.stop(now + 0.09);
+    } else if (type === 'crit') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1320, now + 0.06);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.start(now); osc.stop(now + 0.28);
+    } else if (type === 'kill') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc.start(now); osc.stop(now + 0.45);
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.value = 180;
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    } else if (type === 'gameover') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.55);
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      osc.start(now); osc.stop(now + 0.55);
+    }
+  } catch(e) { /* silence audio errors */ }
 }
 
 const PRAISES   = ['太棒了！','厲害！','完美！','超強！','好厲害！','無敵了！'];
@@ -368,6 +507,8 @@ createApp({
     const mobileInput   = ref(null);
     const penaltyMsg    = ref(null);
     const combo         = ref(0);  // reactive for HUD display
+    const bestScore     = ref(parseInt(localStorage.getItem(HS_KEY)||'0'));
+    const isNewBest     = ref(false);
 
     let pixiApp=null, monster=null;
     let monsterHP=0, monsterMaxHP=0;
@@ -413,7 +554,8 @@ createApp({
         cursor.value++;
         damageMonster(isCrit);
         spawnDmgNumber(isCrit);
-        if(isCrit) showCrit();
+        if(isCrit){ showCrit(); playSound('crit'); }
+        else { playSound('hit'); }
         if(cursor.value>=flatSentence.value.length){
           clearInterval(timerInterval);
           score.value++;
@@ -428,6 +570,7 @@ createApp({
         if(wrongTimer) clearTimeout(wrongTimer);
         wrongIdx.value=cursor.value;
         wrongTimer=setTimeout(()=>{ wrongIdx.value=-1; wrongTimer=null; },350);
+        playSound('wrong');
         if(mode.value==='timeattack') applyTimePenalty();
       }
     }
@@ -751,6 +894,7 @@ createApp({
     }
     function killMonster(){
       if(!monster) return;
+      playSound('kill');
       const dying=monster; monster=null;
       if(bounceTicker){pixiApp.ticker.remove(bounceTicker);bounceTicker=null;}
       let sc=1;
@@ -800,11 +944,22 @@ createApp({
         if(timeLeft<=0){clearInterval(timerInterval);onTimerExpire();}
       },100);
     }
+    function doGameOver(){
+      // Save high score
+      if(score.value > bestScore.value){
+        bestScore.value = score.value;
+        localStorage.setItem(HS_KEY, String(score.value));
+        isNewBest.value = true;
+      }
+      playSound('gameover');
+      clearInterval(timerInterval);
+      phase.value='gameover';
+    }
     function onTimerExpire(){
       const f=dmgFlash.value;
       if(f){f.classList.add('flash');setTimeout(()=>f.classList.remove('flash'),300);}
       hp.value--;
-      if(hp.value<=0){phase.value='gameover';clearInterval(timerInterval);return;}
+      if(hp.value<=0){ doGameOver(); return; }
       loadSentence();
     }
     function applyTimePenalty(){
@@ -828,6 +983,8 @@ createApp({
       mode.value=m||'timeattack';
       score.value=0;hp.value=3;level.value=1;usedIdx.clear();
       comboCount=0; combo.value=0;
+      isNewBest.value=false;
+      ensureAudio();
       clearInterval(timerInterval);
       phase.value='playing';
       // wait for Vue to update DOM + CSS layout to settle
@@ -853,7 +1010,7 @@ createApp({
 
     return {
       phase,mode,score,hp,level,cursor,wrongIdx,activeKeys,combo,tierNum,tierLabel,
-      currentWords,flatLen,timerPct,kbRows,
+      currentWords,flatLen,timerPct,kbRows,bestScore,isNewBest,
       comboMsg,critMsg,dmgFlash,mobileInput,penaltyMsg,
       startGame,pressKey,
       onKeyDown,onKeyUp,onMobileInput,focusMobile,refocusMobile,
