@@ -307,7 +307,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
       <div class="hp"><span v-for="i in 3" :key="i">{{hp>=i?'❤️':'🖤'}}</span></div>
       <div class="score">⭐ {{score}}</div>
       <div class="level">Lv.{{level}}</div>
-      <button v-if="phase==='playing'" id="pause-btn" @click="togglePause" title="暫停 (P)">⏸</button>
+      <button v-if="phase==='playing'" id="pause-btn" @click="togglePause" title="暫停">⏸</button>
       <div v-if="phase==='playing'" :class="['mode-badge', mode]">
         {{mode==='practice'?'練習':'限時'}}
       </div>
@@ -381,7 +381,7 @@ body{background:#1a1a2e;color:#eee;font-family:'Noto Sans TC',sans-serif;overflo
   <div id="pause-overlay" v-if="isPaused">
     <div id="pause-card">
       <h2>⏸ PAUSED</h2>
-      <div class="pause-hint">ESC 或 P 繼續</div>
+      <div class="pause-hint">按 ESC 或點選繼續</div>
       <button class="pause-btn resume" @click="togglePause">▶ 繼續遊戲</button>
       <button class="pause-btn newgame" @click="restartGame">🔄 新遊戲</button>
       <button class="pause-btn quit" @click="quitGame">🏠 停止遊戲</button>
@@ -1019,8 +1019,8 @@ createApp({
         handleTutInput(e.key.toLowerCase());
         return;
       }
-      // ESC or P: toggle pause during gameplay
-      if(phase.value==='playing' && (e.key==='Escape' || e.key.toLowerCase()==='p')){
+      // ESC: toggle pause during gameplay
+      if(phase.value==='playing' && e.key==='Escape'){
         e.preventDefault(); togglePause(); return;
       }
       if(isPaused.value || phase.value!=='playing') return;
