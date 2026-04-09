@@ -40,8 +40,12 @@ Single-page app, all code in `src/index.html` (HTML + CSS + JS in one file).
 - Every 3 sentences: level up (harder sentences, stronger monsters) with level-up animation
 - Every 5th level: Boss battle (HP ×3, size ×1.5, gold glow)
 - Combo system: every 5 consecutive correct inputs = CRIT (×2 damage)
-- Pause anytime with ESC or P
+- Pause anytime with ESC or the ⏸ HUD button; pause menu includes SFX/BGM toggles, new game, and quit
 - High score saved in localStorage
 - End screen shows accuracy % and peak combo
 - Supports physical keyboard and on-screen virtual keyboard
 - Tiered sentence pool: 100 sentences across 3 difficulty tiers (初學/中級/高級)
+- Background music (BGM): procedurally generated melody via Web Audio API, mutable in pause menu
+- Achievement system: 8 unlockable badges with toast notifications, persisted in localStorage
+- Daily challenge: fixed 5-sentence set seeded by today's date (LCG PRNG), once per day
+- Tutorial mode: 10-step guided intro with keyboard highlighting, unlocks an achievement on completion

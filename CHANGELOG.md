@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] - 2026-04-09
+
+### Added
+- 背景音樂（BGM）：Web Audio API 程序生成三角波旋律迴圈（16 音符），預設靜音，可在暫停選單切換
+- 成就系統：8 個條件型成就（首殺、連擊 10、破 50 分、Boss 擊殺、完美通關、Lv.10、每日挑戰、完成教學），Toast 動畫通知 + localStorage 持久化
+- 每日挑戰模式：以當天日期為 seed 的 LCG 隨機算法選出固定 5 句題組，每日限玩一次，分數記錄於 localStorage
+- 教學關卡：10 步驟互動引導，鍵盤高亮目標鍵 + 提示文字，完成後解鎖成就
+- HUD 暫停按鈕（⏸）：遊戲進行中右上角顯示，點擊暫停
+- 強化暫停選單：改為卡片式設計，含 繼續/新遊戲/停止遊戲 + 音效/音樂 開關
+
+### Fixed
+- 移除 P 鍵暫停快捷鍵（P 對應注音 ㄣ，會阻斷輸入），保留 ESC 暫停
+
 ## [0.3.0] - 2026-04-08
 
 ### Added

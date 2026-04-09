@@ -32,7 +32,8 @@ Single-page app with all game logic in one file:
 3. Correct input advances cursor and damages monster; wrong input triggers `wrongIdx` highlight + hint key glow + 2-second time penalty
 4. Timer expires → lose 1 HP; all HP gone → game over
 5. Every 3 sentences scored → level up (with animation); when monster HP reaches 0 → kill animation + respawn
-6. Every 5th level → Boss (HP ×3, size ×1.5). ESC/P toggles pause; `isPaused` blocks all input and suspends timer
+6. Every 5th level → Boss (HP ×3, size ×1.5). ESC (or ⏸ button) toggles pause; `isPaused` blocks all input and suspends timer
+7. Modes: `normal` (endless), `daily` (fixed 5 sentences seeded by date, once per day), `tutorial` (10-step guided intro)
 
 ### Key Data Structures
 
